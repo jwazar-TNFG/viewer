@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Viewer — Flow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.95);
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .header h1 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+        
+        .time-toggle {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .time-btn {
+            padding: 8px 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #888;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .time-btn.active { background: #5BA4B5; border-color: #5BA4B5; color: #fff; }
+        
+        .container {
+            padding-top: 60px;
+            padding-bottom: 20px;
+        }
+        
+        .section {
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        
+        .section-header {
+            padding: 14px 16px;
+            background: #111;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid #222;
+        }
+        
+        .section-header:active { background: #1a1a1a; }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-badge {
+            background: #333;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 9px;
+            color: #888;
+            font-weight: 500;
+        }
+        
+        .section-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+        }
+        
+        .section-stat {
+            text-align: right;
+        }
+        
+        .section-stat-value {
+            font-weight: 600;
+            color: #5BA4B5;
+        }
+        
+        .section-stat-value.green { color: #4ade80; }
+        
+        .section-stat-label {
+            font-size: 9px;
+            color: #666;
+        }
+        
+        .section-chevron {
+            color: #666;
+            font-size: 18px;
+            transition: transform 0.3s;
+        }
+        
+        .section.expanded .section-chevron {
+            transform: rotate(90deg);
+        }
+        
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+            background: #0a0a0a;
+        }
+        
+        .section.expanded .section-content {
+            max-height: 2000px;
+        }
+        
+        .row {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 12px 16px;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .row::-webkit-scrollbar { display: none; }
+        
+        .card {
+            flex: 0 0 auto;
+            width: 160px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 12px;
+            scroll-snap-align: start;
+            cursor: pointer;
+        }
+        
+        .card:active { transform: scale(0.97); }
+        
+        .card.perf-great { border-color: #4ade80; }
+        .card.perf-good { border-color: #5BA4B5; }
+        .card.perf-behind { border-color: #fbbf24; }
+        .card.perf-critical { border-color: #ef4444; }
+        
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .card-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        
+        .card-stat {
+            text-align: center;
+            background: #111;
+            padding: 6px;
+            border-radius: 4px;
+        }
+        
+        .card-stat-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #5BA4B5;
+        }
+        
+        .card-stat-value.green { color: #4ade80; }
+        .card-stat-value.red { color: #ef4444; }
+        
+        .card-stat-label {
+            font-size: 8px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        /* Nested sections */
+        .subsection {
+            margin-left: 0;
+            border-left: 3px solid #333;
+        }
+        
+        .subsection .section-header {
+            background: #0d0d0d;
+            padding-left: 20px;
+        }
+        
+        .subsection .section-content {
+            background: #080808;
+        }
+        
+        .subsection .subsection {
+            border-left-color: #444;
+        }
+        
+        .subsection .subsection .section-header {
+            padding-left: 28px;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #888;
+        }
+        
+        .perf-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .perf-indicator.great { background: #4ade80; }
+        .perf-indicator.good { background: #5BA4B5; }
+        .perf-indicator.behind { background: #fbbf24; }
+        .perf-indicator.critical { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Organization</h1>
+        <div class="time-toggle">
+            <button class="time-btn" data-range="today">Today</button>
+            <button class="time-btn active" data-range="mtd">MTD</button>
+            <button class="time-btn" data-range="ytd">YTD</button>
+        </div>
+    </div>
+    
+    <div class="container" id="container"></div>
+    <div class="loading" id="loading">Loading...</div>
+
+    <script>
+        let data = null;
+        let timeRange = 'mtd';
+        
+        async function init() {
+            const res = await fetch('data.json?' + Date.now());
+            data = await res.json();
+            document.getElementById('loading').style.display = 'none';
+            
+            // Time toggle
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    timeRange = btn.dataset.range;
+                    render();
+                });
+            });
+            
+            render();
+        }
+        
+        function getPerformanceClass(goalPct) {
+            if (goalPct >= 140) return 'great';
+            if (goalPct >= 83) return 'good';
+            if (goalPct >= 50) return 'behind';
+            return 'critical';
+        }
+        
+        function render() {
+            const container = document.getElementById('container');
+            
+            // Sort offices by CV
+            const offices = Object.keys(data.offices)
+                .map(id => ({ id, ...data.offices[id] }))
+                .sort((a, b) => (b[timeRange]?.cv || 0) - (a[timeRange]?.cv || 0));
+            
+            container.innerHTML = offices.map(office => {
+                const stats = office[timeRange] || {};
+                const perfClass = getPerformanceClass(stats.goalPct || 0);
+                const hasPods = office.pods && office.pods.length > 0;
+                
+                return `
+                    <div class="section" id="office-${office.id}">
+                        <div class="section-header" onclick="toggleSection('office-${office.id}')">
+                            <div class="section-title">
+                                <span class="perf-indicator ${perfClass}"></span>
+                                ${office.name || office.id}
+                                <span class="section-badge">${hasPods ? office.pods.length + ' pods' : (office.reps?.length || 0) + ' reps'}</span>
+                            </div>
+                            <div class="section-stats">
+                                <div class="section-stat">
+                                    <div class="section-stat-value">${(stats.cv || 0).toFixed(1)}</div>
+                                    <div class="section-stat-label">CV</div>
+                                </div>
+                                <div class="section-stat">
+                                    <div class="section-stat-value green">${(stats.greenPct || 0).toFixed(0)}%</div>
+                                    <div class="section-stat-label">Green</div>
+                                </div>
+                                <span class="section-chevron">›</span>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            ${hasPods ? renderPods(office.pods) : renderRepsRow(office.reps)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderPods(podIds) {
+            return podIds.map(podId => {
+                const pod = data.pods[podId] || {};
+                const stats = pod[timeRange] || {};
+                const perfClass = getPerformanceClass(stats.goalPct || 0);
+                const repCount = pod.reps?.length || 0;
+                
+                return `
+                    <div class="section subsection" id="pod-${podId}">
+                        <div class="section-header" onclick="toggleSection('pod-${podId}')">
+                            <div class="section-title">
+                                <span class="perf-indicator ${perfClass}"></span>
+                                ${pod.name || podId}
+                                <span class="section-badge">${repCount} reps</span>
+                            </div>
+                            <div class="section-stats">
+                                <div class="section-stat">
+                                    <div class="section-stat-value">${(stats.cv || 0).toFixed(1)}</div>
+                                    <div class="section-stat-label">CV</div>
+                                </div>
+                                <div class="section-stat">
+                                    <div class="section-stat-value green">${(stats.greenPct || 0).toFixed(0)}%</div>
+                                    <div class="section-stat-label">Green</div>
+                                </div>
+                                <span class="section-chevron">›</span>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            ${renderRepsRow(pod.reps || [])}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderRepsRow(repNames) {
+            if (!repNames || repNames.length === 0) {
+                return '<div style="padding: 16px; color: #666; font-size: 12px;">No reps</div>';
+            }
+            
+            // Sort by CV
+            const reps = repNames
+                .map(name => ({ name, ...data.reps[name] }))
+                .filter(r => r)
+                .sort((a, b) => (b[timeRange]?.cv || 0) - (a[timeRange]?.cv || 0));
+            
+            return `
+                <div class="row">
+                    ${reps.map(rep => {
+                        const stats = rep[timeRange] || {};
+                        const perfClass = 'perf-' + getPerformanceClass(stats.goalPct || 0);
+                        
+                        return `
+                            <div class="card ${perfClass}">
+                                <div class="card-title">${rep.name}</div>
+                                <div class="card-stats">
+                                    <div class="card-stat">
+                                        <div class="card-stat-value">${stats.signed || 0}</div>
+                                        <div class="card-stat-label">Signed</div>
+                                    </div>
+                                    <div class="card-stat">
+                                        <div class="card-stat-value">${(stats.cv || 0).toFixed(1)}</div>
+                                        <div class="card-stat-label">CV</div>
+                                    </div>
+                                    <div class="card-stat">
+                                        <div class="card-stat-value green">${(stats.greenPct || 0).toFixed(0)}%</div>
+                                        <div class="card-stat-label">Green</div>
+                                    </div>
+                                    <div class="card-stat">
+                                        <div class="card-stat-value">${(stats.goalPct || 0).toFixed(0)}%</div>
+                                        <div class="card-stat-label">Goal</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+        
+        function toggleSection(id) {
+            const section = document.getElementById(id);
+            section.classList.toggle('expanded');
+        }
+        
+        init();
+    </script>
+</body>
+</html>

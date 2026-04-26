@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Viewer — Infinite Zoom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.95);
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .back-btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #5BA4B5;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            display: none;
+        }
+        
+        .back-btn.visible { display: block; }
+        .back-btn:active { background: #2a2a2a; }
+        
+        .breadcrumb {
+            font-size: 13px;
+            color: #888;
+            flex: 1;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 10px;
+        }
+        
+        .breadcrumb span { color: #5BA4B5; }
+        
+        .time-toggle {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .time-btn {
+            padding: 8px 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #888;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .time-btn.active { background: #5BA4B5; border-color: #5BA4B5; color: #fff; }
+        
+        .container {
+            position: absolute;
+            top: 56px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+        
+        .level {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 16px;
+            display: grid;
+            gap: 12px;
+            overflow-y: auto;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+        
+        .level.grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .level.grid-3 { grid-template-columns: repeat(3, 1fr); }
+        
+        .level.hidden-left {
+            transform: scale(1.5);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .level.hidden-right {
+            transform: scale(0.5);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .card {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card:active { transform: scale(0.97); }
+        
+        .card.perf-great { border-color: #4ade80; }
+        .card.perf-good { border-color: #5BA4B5; }
+        .card.perf-behind { border-color: #fbbf24; }
+        .card.perf-critical { border-color: #ef4444; }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+        
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            flex: 1;
+        }
+        
+        .card-badge {
+            background: #333;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 9px;
+            color: #888;
+            margin-left: 8px;
+        }
+        
+        .card-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5BA4B5;
+        }
+        
+        .stat-value.green { color: #4ade80; }
+        .stat-value.red { color: #ef4444; }
+        
+        .stat-label {
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .card-footer {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #333;
+            font-size: 11px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-btn" id="backBtn" onclick="goBack()">← Back</button>
+        <div class="breadcrumb" id="breadcrumb"><span>Organization</span></div>
+        <div class="time-toggle">
+            <button class="time-btn" data-range="today">Today</button>
+            <button class="time-btn active" data-range="mtd">MTD</button>
+            <button class="time-btn" data-range="ytd">YTD</button>
+        </div>
+    </div>
+    
+    <div class="container" id="container"></div>
+    <div class="loading" id="loading">Loading...</div>
+
+    <script>
+        let data = null;
+        let timeRange = 'mtd';
+        let history = []; // Stack of { level, id, title }
+        
+        async function init() {
+            const res = await fetch('data.json?' + Date.now());
+            data = await res.json();
+            document.getElementById('loading').style.display = 'none';
+            
+            // Time toggle
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    timeRange = btn.dataset.range;
+                    refreshCurrentLevel();
+                });
+            });
+            
+            showLevel('org', 'Organization');
+        }
+        
+        function getPerformanceClass(goalPct) {
+            if (goalPct >= 140) return 'perf-great';
+            if (goalPct >= 83) return 'perf-good';
+            if (goalPct >= 50) return 'perf-behind';
+            return 'perf-critical';
+        }
+        
+        function showLevel(type, title, parentId = null) {
+            history.push({ type, title, parentId });
+            
+            const container = document.getElementById('container');
+            
+            // Create new level
+            const level = document.createElement('div');
+            level.className = 'level hidden-right';
+            level.id = 'current-level';
+            
+            let items = [];
+            
+            if (type === 'org') {
+                // Show offices
+                items = Object.keys(data.offices).map(id => ({
+                    id,
+                    type: 'office',
+                    ...data.offices[id]
+                }));
+                level.classList.add('grid-2');
+            } else if (type === 'office') {
+                const office = data.offices[parentId];
+                if (office.pods && office.pods.length > 0) {
+                    items = office.pods.map(id => ({
+                        id,
+                        type: 'pod',
+                        ...data.pods[id]
+                    }));
+                } else if (office.reps) {
+                    items = office.reps.map(name => ({
+                        id: name,
+                        type: 'rep',
+                        name,
+                        ...data.reps[name]
+                    }));
+                }
+                level.classList.add('grid-2');
+            } else if (type === 'pod') {
+                const pod = data.pods[parentId];
+                if (pod && pod.reps) {
+                    items = pod.reps.map(name => ({
+                        id: name,
+                        type: 'rep',
+                        name,
+                        ...data.reps[name]
+                    }));
+                }
+                level.classList.add('grid-2');
+            }
+            
+            // Sort by CV descending
+            items.sort((a, b) => {
+                const aCV = (a[timeRange]?.cv || 0);
+                const bCV = (b[timeRange]?.cv || 0);
+                return bCV - aCV;
+            });
+            
+            level.innerHTML = items.map(item => {
+                const stats = item[timeRange] || {};
+                const perfClass = getPerformanceClass(stats.goalPct || 0);
+                const hasChildren = item.type !== 'rep';
+                const childCount = item.type === 'office' ? 
+                    (data.offices[item.id]?.pods?.length || data.offices[item.id]?.reps?.length || 0) :
+                    item.type === 'pod' ? (data.pods[item.id]?.reps?.length || 0) : 0;
+                
+                return `
+                    <div class="card ${perfClass}" onclick="${hasChildren ? `drillDown('${item.type}', '${item.id}', '${item.name || item.id}')` : ''}">
+                        <div class="card-header">
+                            <div class="card-title">${item.name || item.id}</div>
+                            <div class="card-badge">${item.type.toUpperCase()}</div>
+                        </div>
+                        <div class="card-stats">
+                            <div class="stat">
+                                <div class="stat-value">${stats.signed || 0}</div>
+                                <div class="stat-label">Signed</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${(stats.cv || 0).toFixed(1)}</div>
+                                <div class="stat-label">CV</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value green">${(stats.greenPct || 0).toFixed(0)}%</div>
+                                <div class="stat-label">Green</div>
+                            </div>
+                        </div>
+                        ${hasChildren ? `
+                        <div class="card-footer">
+                            <span>${childCount} ${item.type === 'office' ? (data.offices[item.id]?.pods?.length ? 'pods' : 'reps') : 'reps'}</span>
+                            <span>${(stats.goalPct || 0).toFixed(0)}% goal</span>
+                        </div>
+                        ` : `
+                        <div class="card-footer">
+                            <span>${(stats.dropPct || 0).toFixed(0)}% drops</span>
+                            <span>${(stats.goalPct || 0).toFixed(0)}% goal</span>
+                        </div>
+                        `}
+                    </div>
+                `;
+            }).join('');
+            
+            // Animate transition
+            const oldLevel = document.getElementById('current-level');
+            if (oldLevel) {
+                oldLevel.id = 'old-level';
+                oldLevel.classList.add('hidden-left');
+                setTimeout(() => oldLevel.remove(), 400);
+            }
+            
+            container.appendChild(level);
+            requestAnimationFrame(() => {
+                level.classList.remove('hidden-right');
+            });
+            
+            updateHeader();
+        }
+        
+        function drillDown(type, id, title) {
+            if (type === 'office') {
+                showLevel('office', title, id);
+            } else if (type === 'pod') {
+                showLevel('pod', title, id);
+            }
+        }
+        
+        function goBack() {
+            if (history.length <= 1) return;
+            
+            history.pop(); // Remove current
+            const prev = history.pop(); // Get previous (will be re-added by showLevel)
+            
+            // Reverse animation
+            const container = document.getElementById('container');
+            const oldLevel = document.getElementById('current-level');
+            
+            if (oldLevel) {
+                oldLevel.id = 'old-level';
+                oldLevel.classList.add('hidden-right');
+                setTimeout(() => oldLevel.remove(), 400);
+            }
+            
+            // Create level coming from left
+            showLevel(prev.type, prev.title, prev.parentId);
+            const newLevel = document.getElementById('current-level');
+            newLevel.classList.remove('hidden-right');
+            newLevel.classList.add('hidden-left');
+            requestAnimationFrame(() => {
+                newLevel.classList.remove('hidden-left');
+            });
+        }
+        
+        function updateHeader() {
+            const backBtn = document.getElementById('backBtn');
+            const breadcrumb = document.getElementById('breadcrumb');
+            
+            backBtn.classList.toggle('visible', history.length > 1);
+            
+            breadcrumb.innerHTML = history.map((h, i) => 
+                i === history.length - 1 ? 
+                    `<span>${h.title}</span>` : 
+                    h.title
+            ).join(' › ');
+        }
+        
+        function refreshCurrentLevel() {
+            if (history.length === 0) return;
+            const current = history.pop();
+            showLevel(current.type, current.title, current.parentId);
+        }
+        
+        init();
+    </script>
+</body>
+</html>
