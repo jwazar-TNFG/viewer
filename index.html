@@ -338,6 +338,17 @@
         .node.level-2 { min-width: 135px; }
         .node.level-3 { min-width: 125px; font-size: 10px; }
         
+        .node.pagination-btn {
+            min-width: 100px;
+            padding: 8px;
+            background: #0d2535;
+            border-color: #5BA4B5;
+        }
+        
+        .node.pagination-btn:active {
+            background: #1a3a4a;
+        }
+        
         @media (min-width: 768px) {
             .node { padding: 14px; min-width: 160px; border-radius: 12px; }
             .node:hover { transform: scale(1.03); z-index: 25; }
@@ -595,6 +606,7 @@
         let isDragging = false;
         let dragStart = { x: 0, y: 0 };
         let compareNodes = [];
+        let paginationState = {}; // nodeId -> { page: 0, total: N }
         
         // Initialize
         async function init() {
@@ -861,19 +873,42 @@
             const parentEl = document.querySelector(`[data-id="${nodeId}"]`);
             if (parentEl) parentEl.classList.add('expanded');
             
-            const childCount = children.length;
+            // PAGINATION: Max 8 children at a time
+            const MAX_VISIBLE = 8;
+            const page = paginationState[nodeId]?.page || 0;
+            const totalChildren = children.length;
+            const startIdx = page * MAX_VISIBLE;
+            const visibleChildren = children.slice(startIdx, startIdx + MAX_VISIBLE);
+            const hasMore = startIdx + MAX_VISIBLE < totalChildren;
+            const hasPrev = page > 0;
+            
+            paginationState[nodeId] = { page, total: totalChildren, children };
+            
+            const childCount = visibleChildren.length + (hasMore ? 1 : 0) + (hasPrev ? 1 : 0);
             
             // Tighter radius for focused view
-            const radius = Math.min(300, 180 + childCount * 15);
+            const radius = Math.min(280, 160 + childCount * 20);
             
             // Angle step
             const angleStep = (Math.PI * 2) / Math.max(childCount, 1);
             const startAngle = -Math.PI / 2;
             
-            children.forEach((childId, i) => {
-                const angle = startAngle + (i * angleStep);
+            let angleIndex = 0;
+            
+            // Add "Previous" button if needed
+            if (hasPrev) {
+                const angle = startAngle + (angleIndex * angleStep);
+                const btnX = x + Math.cos(angle) * radius;
+                const btnY = y + Math.sin(angle) * radius;
+                createPaginationButton(nodeId, 'prev', page - 1, btnX, btnY, `← Prev ${MAX_VISIBLE}`, startIdx);
+                angleIndex++;
+            }
+            
+            visibleChildren.forEach((childId, i) => {
+                const angle = startAngle + (angleIndex * angleStep);
                 const childX = x + Math.cos(angle) * radius;
                 const childY = y + Math.sin(angle) * radius;
+                angleIndex++;
                 
                 let childData, childTitle, childBadge, grandchildren;
                 
@@ -935,12 +970,85 @@
                 nodes.push(node);
             });
             
+            // Add "Next" button if needed
+            if (hasMore) {
+                const angle = startAngle + (angleIndex * angleStep);
+                const btnX = x + Math.cos(angle) * radius;
+                const btnY = y + Math.sin(angle) * radius;
+                const remaining = totalChildren - (startIdx + MAX_VISIBLE);
+                createPaginationButton(nodeId, 'next', page + 1, btnX, btnY, `${remaining} more →`, startIdx + MAX_VISIBLE);
+            }
+            
             // Auto-zoom to fit current branch
             setTimeout(() => {
                 fitCurrentBranch();
             }, 100);
             
             updateMinimap();
+        }
+        
+        function createPaginationButton(parentId, direction, newPage, x, y, label, count) {
+            const viewport = document.getElementById('viewport');
+            
+            const btn = document.createElement('div');
+            btn.className = 'node pagination-btn visible';
+            btn.dataset.id = `pagination-${parentId}-${direction}`;
+            btn.dataset.parentId = parentId;
+            btn.dataset.isPagination = 'true';
+            btn.style.left = (x - 60) + 'px';
+            btn.style.top = (y - 30) + 'px';
+            
+            btn.innerHTML = `
+                <div style="text-align: center; padding: 8px 4px;">
+                    <div style="font-size: 13px; font-weight: 600; color: #5BA4B5;">${label}</div>
+                </div>
+            `;
+            
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                paginateTo(parentId, newPage);
+            });
+            
+            viewport.appendChild(btn);
+            
+            // Draw connection
+            const parentNode = nodes.find(n => n.id === parentId);
+            if (parentNode) {
+                drawConnection(parentNode.x, parentNode.y, x, y, parentId + '-pagination-' + direction, 0);
+            }
+            
+            nodes.push({ 
+                id: btn.dataset.id, 
+                level: -1, 
+                x, y, 
+                children: [], 
+                parentId, 
+                element: btn,
+                isPagination: true 
+            });
+        }
+        
+        function paginateTo(nodeId, newPage) {
+            const state = paginationState[nodeId];
+            if (!state) return;
+            
+            const parentNode = nodes.find(n => n.id === nodeId);
+            if (!parentNode) return;
+            
+            // Remove current children (including pagination buttons)
+            const toRemove = nodes.filter(n => n.parentId === nodeId);
+            toRemove.forEach(n => {
+                n.element.remove();
+                const line = document.getElementById('line-' + nodeId + '-' + n.id);
+                if (line) line.remove();
+            });
+            nodes = nodes.filter(n => n.parentId !== nodeId);
+            
+            // Update page and re-expand
+            paginationState[nodeId].page = newPage;
+            expandedNodes.delete(nodeId);
+            
+            expandNode(nodeId, parentNode.x, parentNode.y, parentNode.level, state.children);
         }
         
         function fitCurrentBranch() {
