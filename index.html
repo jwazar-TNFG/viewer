@@ -825,6 +825,18 @@
         }
         
         function expandNode(nodeId, x, y, level, children) {
+            // FOCUSED DRILL-DOWN: Collapse siblings first
+            const currentNode = nodes.find(n => n.id === nodeId);
+            if (currentNode && currentNode.parentId) {
+                // Find siblings (same parent, same level) and collapse them
+                const siblings = nodes.filter(n => n.parentId === currentNode.parentId && n.id !== nodeId);
+                siblings.forEach(sib => {
+                    if (expandedNodes.has(sib.id)) {
+                        collapseNode(sib.id);
+                    }
+                });
+            }
+            
             expandedNodes.add(nodeId);
             
             const parentEl = document.querySelector(`[data-id="${nodeId}"]`);
@@ -832,43 +844,23 @@
             
             const childCount = children.length;
             
-            // Dynamic radius based on child count — more children = wider spread
-            const minRadius = 350;
-            const radiusPerChild = 40;
-            const radius = Math.max(minRadius, 200 + childCount * radiusPerChild);
+            // Tighter radius for focused view
+            const radius = Math.min(300, 180 + childCount * 15);
             
-            // Angle step with minimum spacing
-            const minAngleSpacing = 0.35; // ~20 degrees minimum between nodes
-            const naturalAngleStep = (Math.PI * 2) / Math.max(childCount, 1);
-            const angleStep = Math.max(naturalAngleStep, minAngleSpacing);
-            
-            // If we need more than 360°, use multiple rings
-            const nodesPerRing = Math.floor((Math.PI * 2) / minAngleSpacing);
-            const useMultipleRings = childCount > nodesPerRing;
-            
+            // Angle step
+            const angleStep = (Math.PI * 2) / Math.max(childCount, 1);
             const startAngle = -Math.PI / 2;
             
             children.forEach((childId, i) => {
-                let childX, childY;
-                
-                if (useMultipleRings) {
-                    // Multiple rings for many children
-                    const ring = Math.floor(i / nodesPerRing);
-                    const indexInRing = i % nodesPerRing;
-                    const ringRadius = radius + (ring * 250);
-                    const ringAngleStep = (Math.PI * 2) / Math.min(nodesPerRing, childCount - ring * nodesPerRing);
-                    const angle = startAngle + (indexInRing * ringAngleStep);
-                    childX = x + Math.cos(angle) * ringRadius;
-                    childY = y + Math.sin(angle) * ringRadius;
-                } else {
-                    const angle = startAngle + (i * angleStep);
-                    childX = x + Math.cos(angle) * radius;
-                    childY = y + Math.sin(angle) * radius;
-                }
+                const angle = startAngle + (i * angleStep);
+                const childX = x + Math.cos(angle) * radius;
+                const childY = y + Math.sin(angle) * radius;
                 
                 let childData, childTitle, childBadge, grandchildren;
                 
+                // Hierarchy: Org (0) → Office (1) → Pod (2) → Team (3) → Rep (4)
                 if (level === 0) {
+                    // Org → Offices
                     childData = data.offices[childId] || {};
                     childTitle = childData.name || childId;
                     childBadge = 'Office';
@@ -877,11 +869,26 @@
                         grandchildren = childData.reps;
                     }
                 } else if (level === 1) {
-                    childData = data.pods[childId] || data.reps[childId] || {};
+                    // Office → Pods
+                    childData = data.pods[childId] || {};
                     childTitle = childData.name || childId;
-                    childBadge = childData.isRep ? 'Rep' : 'Pod';
-                    grandchildren = childData.reps || [];
+                    childBadge = 'Pod';
+                    grandchildren = childData.teams || childData.reps || [];
                 } else if (level === 2) {
+                    // Pod → Teams or Reps
+                    childData = data.teams ? data.teams[childId] : null;
+                    if (childData) {
+                        childTitle = childData.name || childId;
+                        childBadge = 'Team';
+                        grandchildren = childData.reps || [];
+                    } else {
+                        childData = data.reps[childId] || {};
+                        childTitle = childData.name || childId;
+                        childBadge = 'Rep';
+                        grandchildren = [];
+                    }
+                } else if (level === 3) {
+                    // Team → Reps
                     childData = data.reps[childId] || {};
                     childTitle = childData.name || childId;
                     childBadge = 'Rep';
@@ -891,7 +898,7 @@
                 const stats = childData[timeRange] || {};
                 
                 // Draw connection with animation
-                drawConnection(x, y, childX, childY, nodeId + '-' + childId, i * 30);
+                drawConnection(x, y, childX, childY, nodeId + '-' + childId, i * 20);
                 
                 const node = createNode({
                     id: childId,
@@ -903,57 +910,54 @@
                     y: childY,
                     children: grandchildren,
                     parentId: nodeId,
-                    delay: i * 40
+                    delay: i * 25
                 });
                 
                 nodes.push(node);
             });
             
-            // Auto-zoom to fit all visible nodes after expansion
+            // Auto-zoom to fit current branch
             setTimeout(() => {
-                autoFitExpanded(nodeId, x, y, radius);
+                fitCurrentBranch();
             }, 100);
             
             updateMinimap();
         }
         
-        function autoFitExpanded(parentId, parentX, parentY, radius) {
-            // Calculate bounds of parent + all its direct children
-            const childNodes = nodes.filter(n => n.parentId === parentId);
-            if (childNodes.length === 0) return;
+        function fitCurrentBranch() {
+            // Get all visible nodes and fit them
+            if (nodes.length === 0) return;
             
-            const allX = [parentX, ...childNodes.map(n => n.x)];
-            const allY = [parentY, ...childNodes.map(n => n.y)];
+            const xs = nodes.map(n => n.x);
+            const ys = nodes.map(n => n.y);
             
-            const minX = Math.min(...allX) - 150;
-            const maxX = Math.max(...allX) + 150;
-            const minY = Math.min(...allY) - 150;
-            const maxY = Math.max(...allY) + 150;
+            const minX = Math.min(...xs) - 100;
+            const maxX = Math.max(...xs) + 100;
+            const minY = Math.min(...ys) - 100;
+            const maxY = Math.max(...ys) + 100;
             
             const width = maxX - minX;
             const height = maxY - minY;
             
-            const availableWidth = window.innerWidth - 40;
-            const availableHeight = window.innerHeight - 100;
+            const availableWidth = window.innerWidth - 20;
+            const availableHeight = window.innerHeight - 80;
             
             const scaleX = availableWidth / width;
             const scaleY = availableHeight / height;
             
-            const newZoom = Math.min(scaleX, scaleY, 1, zoom); // Don't zoom in, only out
+            zoom = Math.min(scaleX, scaleY, 1.2);
+            zoom = Math.max(0.4, zoom);
             
-            if (newZoom < zoom * 0.95) {
-                // Need to zoom out
-                zoom = Math.max(0.3, newZoom * 0.9);
-                
-                // Center on the parent node
-                const centerX = (minX + maxX) / 2;
-                const centerY = (minY + maxY) / 2;
-                panX = -centerX * zoom + window.innerWidth / 2;
-                panY = -centerY * zoom + window.innerHeight / 2;
-                
-                updateViewport();
-            }
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            
+            panX = -centerX * zoom + window.innerWidth / 2;
+            panY = -centerY * zoom + window.innerHeight / 2;
+            
+            updateViewport();
         }
+        
+        
         
         function collapseNode(nodeId, event) {
             if (event) event.stopPropagation();
@@ -1017,24 +1021,62 @@
         
         function updateBreadcrumb() {
             const breadcrumb = document.getElementById('breadcrumb');
-            const path = ['org'];
             
-            // Find path from expanded nodes
-            let current = Array.from(expandedNodes).pop();
-            while (current && current !== 'org') {
+            // Build path from root to deepest expanded node
+            const path = [];
+            let deepest = null;
+            let maxLevel = -1;
+            
+            nodes.forEach(n => {
+                if (expandedNodes.has(n.id) && n.level > maxLevel) {
+                    maxLevel = n.level;
+                    deepest = n;
+                }
+            });
+            
+            // Walk up from deepest to root
+            let current = deepest;
+            while (current) {
                 path.unshift(current);
-                const node = nodes.find(n => n.id === current);
-                current = node?.parentId;
+                current = nodes.find(n => n.id === current.parentId);
             }
             
-            breadcrumb.innerHTML = path.map((id, i) => {
-                const node = nodes.find(n => n.id === id) || { title: id === 'org' ? 'Organization' : id };
+            // Always start with org
+            if (path.length === 0 || path[0].id !== 'org') {
+                const orgNode = nodes.find(n => n.id === 'org');
+                if (orgNode) path.unshift(orgNode);
+            }
+            
+            breadcrumb.innerHTML = path.map((node, i) => {
                 const isLast = i === path.length - 1;
                 return `
-                    <span class="breadcrumb-item" onclick="focusNode('${id}')">${node.title || id}</span>
+                    <span class="breadcrumb-item" onclick="navigateToBreadcrumb('${node.id}')">${node.title || node.id}</span>
                     ${!isLast ? '<span class="breadcrumb-sep">›</span>' : ''}
                 `;
             }).join('');
+        }
+        
+        function navigateToBreadcrumb(nodeId) {
+            // Collapse everything below this node
+            const node = nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            
+            // Find all nodes at deeper levels than this one and collapse
+            const toCollapse = [];
+            expandedNodes.forEach(id => {
+                const n = nodes.find(nd => nd.id === id);
+                if (n && n.level > node.level) {
+                    toCollapse.push(id);
+                }
+            });
+            
+            // Also collapse this node's expansion
+            if (expandedNodes.has(nodeId)) {
+                collapseNode(nodeId);
+            }
+            
+            focusNode(nodeId);
+            updateBreadcrumb();
         }
         
         function focusNode(nodeId) {
