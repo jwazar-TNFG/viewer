@@ -17,38 +17,46 @@
             user-select: none;
         }
         
+        /* Mobile-first header */
         .header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            padding: 10px 20px;
+            padding: 8px 12px;
             background: rgba(0,0,0,0.95);
             border-bottom: 1px solid #333;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
             z-index: 100;
-            gap: 12px;
+            gap: 8px;
         }
         
         .header-left {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
         }
         
         .header h1 {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
+            white-space: nowrap;
         }
         
         .breadcrumb {
-            display: flex;
+            display: none;
             align-items: center;
-            gap: 6px;
-            font-size: 12px;
+            gap: 4px;
+            font-size: 11px;
             color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .breadcrumb-item {
@@ -61,16 +69,31 @@
         
         .search-box {
             position: relative;
+            display: none;
+        }
+        
+        .search-toggle {
+            width: 36px;
+            height: 36px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #888;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .search-input {
             background: #1a1a1a;
             border: 1px solid #333;
             border-radius: 6px;
-            padding: 8px 12px 8px 32px;
+            padding: 10px 12px 10px 36px;
             color: #fff;
-            font-size: 12px;
-            width: 200px;
+            font-size: 14px;
+            width: 100%;
             outline: none;
         }
         
@@ -78,11 +101,11 @@
         
         .search-icon {
             position: absolute;
-            left: 10px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: #666;
-            font-size: 12px;
+            font-size: 14px;
         }
         
         .search-results {
@@ -94,7 +117,7 @@
             border: 1px solid #333;
             border-radius: 6px;
             margin-top: 4px;
-            max-height: 300px;
+            max-height: 250px;
             overflow-y: auto;
             display: none;
             z-index: 200;
@@ -103,28 +126,28 @@
         .search-results.active { display: block; }
         
         .search-result {
-            padding: 8px 12px;
+            padding: 12px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             border-bottom: 1px solid #222;
         }
         
-        .search-result:hover { background: #2a2a2a; }
-        .search-result-type { color: #666; font-size: 10px; margin-left: 8px; }
+        .search-result:hover, .search-result:active { background: #2a2a2a; }
+        .search-result-type { color: #666; font-size: 11px; margin-left: 8px; }
         
         .header-right {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
         
         .time-toggle {
             display: flex;
-            gap: 4px;
+            gap: 2px;
         }
         
         .time-btn {
-            padding: 6px 12px;
+            padding: 8px 10px;
             background: #1a1a1a;
             border: 1px solid #333;
             color: #888;
@@ -135,21 +158,21 @@
             transition: all 0.2s;
         }
         
-        .time-btn:hover { background: #2a2a2a; color: #fff; }
+        .time-btn:active { background: #2a2a2a; color: #fff; }
         .time-btn.active { background: #5BA4B5; border-color: #5BA4B5; color: #fff; }
         
         .zoom-controls {
             display: flex;
-            gap: 4px;
+            gap: 2px;
         }
         
         .zoom-btn {
-            width: 28px;
-            height: 28px;
+            width: 36px;
+            height: 36px;
             background: #1a1a1a;
             border: 1px solid #333;
             color: #888;
-            font-size: 14px;
+            font-size: 18px;
             border-radius: 4px;
             cursor: pointer;
             display: flex;
@@ -157,19 +180,36 @@
             justify-content: center;
         }
         
-        .zoom-btn:hover { background: #2a2a2a; color: #fff; }
+        .zoom-btn:active { background: #2a2a2a; color: #fff; }
+        
+        /* Tablet and up */
+        @media (min-width: 768px) {
+            .header { padding: 10px 20px; gap: 12px; }
+            .header h1 { font-size: 16px; }
+            .breadcrumb { display: flex; }
+            .search-box { display: block; }
+            .search-toggle { display: none; }
+            .search-input { width: 200px; padding: 8px 12px 8px 32px; font-size: 12px; }
+            .time-btn { padding: 6px 12px; }
+            .zoom-btn { width: 28px; height: 28px; font-size: 14px; }
+        }
         
         .canvas {
             position: absolute;
-            top: 50px;
+            top: 52px;
             left: 0;
             right: 0;
             bottom: 0;
             overflow: hidden;
             cursor: grab;
+            touch-action: none;
         }
         
         .canvas.dragging { cursor: grabbing; }
+        
+        @media (min-width: 768px) {
+            .canvas { top: 50px; }
+        }
         
         .viewport {
             position: absolute;
@@ -178,52 +218,30 @@
             transform-origin: 0 0;
         }
         
-        /* Mini-map */
+        /* Mini-map - hidden for mobile-first */
         .minimap {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 180px;
-            height: 120px;
-            background: #111;
-            border: 1px solid #333;
-            border-radius: 8px;
-            overflow: hidden;
-            z-index: 90;
+            display: none;
         }
-        
-        .minimap-viewport {
-            position: absolute;
-            border: 2px solid #5BA4B5;
-            background: rgba(91, 164, 181, 0.1);
-            pointer-events: none;
-        }
-        
-        .minimap-node {
-            position: absolute;
-            background: #5BA4B5;
-            border-radius: 2px;
-        }
-        
-        .minimap-node.office { background: #4ade80; }
-        .minimap-node.pod { background: #fbbf24; }
-        .minimap-node.rep { background: #888; width: 3px !important; height: 3px !important; }
         
         /* Comparison panel */
         .comparison-panel {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
             background: #1a1a1a;
             border: 1px solid #333;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             z-index: 90;
             display: none;
-            min-width: 300px;
         }
         
         .comparison-panel.active { display: block; }
+        
+        @media (min-width: 768px) {
+            .comparison-panel { left: 20px; right: auto; min-width: 300px; bottom: 20px; padding: 12px; }
+        }
         
         .comparison-header {
             display: flex;
@@ -282,49 +300,55 @@
             position: absolute;
             background: #1a1a1a;
             border: 2px solid #333;
-            border-radius: 12px;
-            padding: 14px;
-            min-width: 160px;
+            border-radius: 10px;
+            padding: 12px;
+            min-width: 140px;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
             transform-origin: center center;
             z-index: 10;
             opacity: 0;
+            -webkit-tap-highlight-color: transparent;
         }
         
         .node.visible { opacity: 1; }
         
-        .node:hover {
-            transform: scale(1.03);
-            z-index: 25;
+        .node:active {
+            transform: scale(0.98);
         }
         
         .node.expanded {
             border-color: #5BA4B5;
-            box-shadow: 0 0 25px rgba(91, 164, 181, 0.4);
+            box-shadow: 0 0 20px rgba(91, 164, 181, 0.4);
         }
         
         .node.compare-selected {
             border-color: #fbbf24;
-            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
         }
         
         /* Performance-based coloring */
         .node.perf-great { border-color: #4ade80; }
-        .node.perf-great:hover { box-shadow: 0 0 20px rgba(74, 222, 128, 0.3); }
-        
         .node.perf-good { border-color: #5BA4B5; }
-        
         .node.perf-behind { border-color: #fbbf24; }
-        .node.perf-behind:hover { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
-        
         .node.perf-critical { border-color: #ef4444; }
-        .node.perf-critical:hover { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
         
-        .node.level-0 { min-width: 200px; }
-        .node.level-1 { min-width: 170px; }
-        .node.level-2 { min-width: 155px; }
-        .node.level-3 { min-width: 145px; font-size: 11px; }
+        .node.level-0 { min-width: 160px; }
+        .node.level-1 { min-width: 145px; }
+        .node.level-2 { min-width: 135px; }
+        .node.level-3 { min-width: 125px; font-size: 10px; }
+        
+        @media (min-width: 768px) {
+            .node { padding: 14px; min-width: 160px; border-radius: 12px; }
+            .node:hover { transform: scale(1.03); z-index: 25; }
+            .node.perf-great:hover { box-shadow: 0 0 20px rgba(74, 222, 128, 0.3); }
+            .node.perf-behind:hover { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
+            .node.perf-critical:hover { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+            .node.level-0 { min-width: 200px; }
+            .node.level-1 { min-width: 170px; }
+            .node.level-2 { min-width: 155px; }
+            .node.level-3 { min-width: 145px; font-size: 11px; }
+        }
         
         .node-header {
             display: flex;
@@ -427,7 +451,7 @@
         .node:hover .node-compare { display: flex; }
         .node.compare-selected .node-compare { display: flex; background: #ef4444; color: #fff; }
         
-        /* Hover detail panel */
+        /* Hover detail panel - desktop only */
         .hover-detail {
             position: fixed;
             background: #1a1a1a;
@@ -440,9 +464,13 @@
             transition: opacity 0.15s;
             min-width: 180px;
             font-size: 11px;
+            display: none;
         }
         
-        .hover-detail.visible { opacity: 1; }
+        @media (min-width: 768px) {
+            .hover-detail { display: block; }
+            .hover-detail.visible { opacity: 1; }
+        }
         
         .hover-detail-title {
             font-weight: 600;
@@ -601,13 +629,18 @@
             document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
             document.getElementById('zoomFit').addEventListener('click', fitToScreen);
             
-            // Pan/drag
+            // Pan/drag - mouse
             const canvas = document.getElementById('canvas');
             canvas.addEventListener('mousedown', startDrag);
             canvas.addEventListener('mousemove', onDrag);
             canvas.addEventListener('mouseup', endDrag);
             canvas.addEventListener('mouseleave', endDrag);
             canvas.addEventListener('wheel', onWheel);
+            
+            // Touch events
+            canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+            canvas.addEventListener('touchend', onTouchEnd);
             
             // Search
             const searchInput = document.getElementById('searchInput');
@@ -1037,6 +1070,69 @@
             e.preventDefault();
             const delta = e.deltaY > 0 ? 0.9 : 1.1;
             setZoom(zoom * delta, e.clientX, e.clientY);
+        }
+        
+        // Touch handling
+        let lastTouchDistance = 0;
+        let lastTouchCenter = { x: 0, y: 0 };
+        let touchStartTime = 0;
+        let touchStartPos = { x: 0, y: 0 };
+        
+        function onTouchStart(e) {
+            if (e.target.closest('.node')) return;
+            
+            if (e.touches.length === 1) {
+                // Single finger - pan
+                isDragging = true;
+                touchStartTime = Date.now();
+                touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                dragStart = { x: e.touches[0].clientX - panX, y: e.touches[0].clientY - panY };
+            } else if (e.touches.length === 2) {
+                // Two fingers - pinch zoom
+                e.preventDefault();
+                isDragging = false;
+                lastTouchDistance = getTouchDistance(e.touches);
+                lastTouchCenter = getTouchCenter(e.touches);
+            }
+        }
+        
+        function onTouchMove(e) {
+            if (e.touches.length === 1 && isDragging) {
+                e.preventDefault();
+                panX = e.touches[0].clientX - dragStart.x;
+                panY = e.touches[0].clientY - dragStart.y;
+                updateViewport();
+            } else if (e.touches.length === 2) {
+                e.preventDefault();
+                const newDistance = getTouchDistance(e.touches);
+                const newCenter = getTouchCenter(e.touches);
+                
+                if (lastTouchDistance > 0) {
+                    const scale = newDistance / lastTouchDistance;
+                    setZoom(zoom * scale, newCenter.x, newCenter.y);
+                }
+                
+                lastTouchDistance = newDistance;
+                lastTouchCenter = newCenter;
+            }
+        }
+        
+        function onTouchEnd(e) {
+            isDragging = false;
+            lastTouchDistance = 0;
+        }
+        
+        function getTouchDistance(touches) {
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        function getTouchCenter(touches) {
+            return {
+                x: (touches[0].clientX + touches[1].clientX) / 2,
+                y: (touches[0].clientY + touches[1].clientY) / 2
+            };
         }
         
         function setZoom(newZoom, cx, cy) {
