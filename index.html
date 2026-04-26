@@ -825,16 +825,35 @@
         }
         
         function expandNode(nodeId, x, y, level, children) {
-            // FOCUSED DRILL-DOWN: Collapse siblings first
+            // FOCUSED DRILL-DOWN: Remove all siblings (same parent) from view entirely
             const currentNode = nodes.find(n => n.id === nodeId);
             if (currentNode && currentNode.parentId) {
-                // Find siblings (same parent, same level) and collapse them
-                const siblings = nodes.filter(n => n.parentId === currentNode.parentId && n.id !== nodeId);
-                siblings.forEach(sib => {
+                // Find and remove ALL siblings
+                const siblingsToRemove = nodes.filter(n => 
+                    n.parentId === currentNode.parentId && n.id !== nodeId
+                );
+                
+                siblingsToRemove.forEach(sib => {
+                    // Collapse any children first
                     if (expandedNodes.has(sib.id)) {
                         collapseNode(sib.id);
                     }
+                    
+                    // Remove the sibling node itself
+                    sib.element.style.opacity = '0';
+                    sib.element.style.transform = 'scale(0.5)';
+                    setTimeout(() => sib.element.remove(), 200);
+                    
+                    // Remove connection line
+                    const line = document.getElementById('line-' + sib.parentId + '-' + sib.id);
+                    if (line) {
+                        line.classList.remove('visible');
+                        setTimeout(() => line.remove(), 200);
+                    }
                 });
+                
+                // Remove from nodes array
+                nodes = nodes.filter(n => !siblingsToRemove.includes(n));
             }
             
             expandedNodes.add(nodeId);
