@@ -14,6 +14,7 @@
             color: #fff;
             min-height: 100vh;
             overflow: hidden;
+            user-select: none;
         }
         
         .header {
@@ -21,18 +22,100 @@
             top: 0;
             left: 0;
             right: 0;
-            padding: 12px 20px;
-            background: rgba(0,0,0,0.9);
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.95);
             border-bottom: 1px solid #333;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 100;
+            gap: 12px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
         
         .header h1 {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .breadcrumb-item {
+            color: #5BA4B5;
+            cursor: pointer;
+        }
+        
+        .breadcrumb-item:hover { text-decoration: underline; }
+        .breadcrumb-sep { color: #444; }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-input {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 8px 12px 8px 32px;
+            color: #fff;
+            font-size: 12px;
+            width: 200px;
+            outline: none;
+        }
+        
+        .search-input:focus { border-color: #5BA4B5; }
+        
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 6px;
+            margin-top: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            z-index: 200;
+        }
+        
+        .search-results.active { display: block; }
+        
+        .search-result {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            border-bottom: 1px solid #222;
+        }
+        
+        .search-result:hover { background: #2a2a2a; }
+        .search-result-type { color: #666; font-size: 10px; margin-left: 8px; }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
         .time-toggle {
@@ -41,11 +124,11 @@
         }
         
         .time-btn {
-            padding: 6px 14px;
+            padding: 6px 12px;
             background: #1a1a1a;
             border: 1px solid #333;
             color: #888;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
             border-radius: 4px;
             cursor: pointer;
@@ -55,89 +138,236 @@
         .time-btn:hover { background: #2a2a2a; color: #fff; }
         .time-btn.active { background: #5BA4B5; border-color: #5BA4B5; color: #fff; }
         
+        .zoom-controls {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .zoom-btn {
+            width: 28px;
+            height: 28px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #888;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .zoom-btn:hover { background: #2a2a2a; color: #fff; }
+        
         .canvas {
             position: absolute;
-            top: 60px;
+            top: 50px;
             left: 0;
             right: 0;
             bottom: 0;
-            overflow: auto;
+            overflow: hidden;
+            cursor: grab;
         }
         
+        .canvas.dragging { cursor: grabbing; }
+        
         .viewport {
-            position: relative;
-            width: 4000px;
-            height: 4000px;
+            position: absolute;
+            width: 6000px;
+            height: 6000px;
+            transform-origin: 0 0;
         }
+        
+        /* Mini-map */
+        .minimap {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 180px;
+            height: 120px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 90;
+        }
+        
+        .minimap-viewport {
+            position: absolute;
+            border: 2px solid #5BA4B5;
+            background: rgba(91, 164, 181, 0.1);
+            pointer-events: none;
+        }
+        
+        .minimap-node {
+            position: absolute;
+            background: #5BA4B5;
+            border-radius: 2px;
+        }
+        
+        .minimap-node.office { background: #4ade80; }
+        .minimap-node.pod { background: #fbbf24; }
+        .minimap-node.rep { background: #888; width: 3px !important; height: 3px !important; }
+        
+        /* Comparison panel */
+        .comparison-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 90;
+            display: none;
+            min-width: 300px;
+        }
+        
+        .comparison-panel.active { display: block; }
+        
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .comparison-title { font-size: 12px; font-weight: 600; }
+        
+        .comparison-close {
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .comparison-slots {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .comparison-slot {
+            flex: 1;
+            background: #111;
+            border: 2px dashed #333;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            font-size: 11px;
+            color: #666;
+            min-height: 100px;
+        }
+        
+        .comparison-slot.filled {
+            border-style: solid;
+            border-color: #5BA4B5;
+            color: #fff;
+            text-align: left;
+        }
+        
+        .comparison-slot-title { font-weight: 600; margin-bottom: 8px; }
+        
+        .comparison-stat {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            padding: 2px 0;
+        }
+        
+        .comparison-stat-better { color: #4ade80; font-weight: 600; }
+        .comparison-stat-worse { color: #ef4444; }
         
         .node {
             position: absolute;
             background: #1a1a1a;
             border: 2px solid #333;
             border-radius: 12px;
-            padding: 16px;
-            min-width: 180px;
+            padding: 14px;
+            min-width: 160px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
             transform-origin: center center;
             z-index: 10;
+            opacity: 0;
         }
         
+        .node.visible { opacity: 1; }
+        
         .node:hover {
-            border-color: #5BA4B5;
-            transform: scale(1.02);
-            z-index: 20;
+            transform: scale(1.03);
+            z-index: 25;
         }
         
         .node.expanded {
             border-color: #5BA4B5;
-            box-shadow: 0 0 20px rgba(91, 164, 181, 0.3);
+            box-shadow: 0 0 25px rgba(91, 164, 181, 0.4);
         }
         
-        .node.level-0 { min-width: 220px; }
-        .node.level-1 { min-width: 180px; }
-        .node.level-2 { min-width: 160px; }
-        .node.level-3 { min-width: 150px; }
-        .node.level-4 { min-width: 140px; font-size: 11px; }
+        .node.compare-selected {
+            border-color: #fbbf24;
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+        }
+        
+        /* Performance-based coloring */
+        .node.perf-great { border-color: #4ade80; }
+        .node.perf-great:hover { box-shadow: 0 0 20px rgba(74, 222, 128, 0.3); }
+        
+        .node.perf-good { border-color: #5BA4B5; }
+        
+        .node.perf-behind { border-color: #fbbf24; }
+        .node.perf-behind:hover { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
+        
+        .node.perf-critical { border-color: #ef4444; }
+        .node.perf-critical:hover { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+        
+        .node.level-0 { min-width: 200px; }
+        .node.level-1 { min-width: 170px; }
+        .node.level-2 { min-width: 155px; }
+        .node.level-3 { min-width: 145px; font-size: 11px; }
         
         .node-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         
         .node-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: #fff;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
-        .node.level-4 .node-title { font-size: 12px; }
+        .node.level-3 .node-title { font-size: 11px; max-width: 100px; }
         
         .node-badge {
             background: #333;
             padding: 2px 8px;
             border-radius: 10px;
-            font-size: 10px;
+            font-size: 9px;
             color: #888;
         }
         
         .node-stats {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
         }
         
         .stat {
             background: #111;
-            padding: 8px;
-            border-radius: 6px;
+            padding: 6px;
+            border-radius: 5px;
             text-align: center;
         }
         
         .stat-value {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
             color: #5BA4B5;
         }
@@ -145,14 +375,14 @@
         .stat-value.green { color: #4ade80; }
         .stat-value.red { color: #ef4444; }
         
-        .node.level-3 .stat-value,
-        .node.level-4 .stat-value { font-size: 14px; }
+        .node.level-2 .stat-value,
+        .node.level-3 .stat-value { font-size: 12px; }
         
         .stat-label {
-            font-size: 9px;
+            font-size: 8px;
             color: #666;
             text-transform: uppercase;
-            margin-top: 2px;
+            margin-top: 1px;
         }
         
         .node-close {
@@ -175,17 +405,81 @@
         
         .node.expanded .node-close { display: flex; }
         
-        /* Connection lines */
-        .connection {
+        .node-compare {
             position: absolute;
+            top: -8px;
+            left: -8px;
+            width: 20px;
+            height: 20px;
+            background: #fbbf24;
+            border: none;
+            border-radius: 50%;
+            color: #000;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+        }
+        
+        .node:hover .node-compare { display: flex; }
+        .node.compare-selected .node-compare { display: flex; background: #ef4444; color: #fff; }
+        
+        /* Hover detail panel */
+        .hover-detail {
+            position: fixed;
+            background: #1a1a1a;
+            border: 1px solid #5BA4B5;
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 200;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            min-width: 180px;
+            font-size: 11px;
+        }
+        
+        .hover-detail.visible { opacity: 1; }
+        
+        .hover-detail-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .hover-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+        }
+        
+        .hover-detail-label { color: #888; }
+        .hover-detail-value { font-weight: 500; }
+        .hover-detail-value.green { color: #4ade80; }
+        .hover-detail-value.red { color: #ef4444; }
+        
+        /* Connection lines */
+        .connections {
+            position: absolute;
+            top: 0;
+            left: 0;
             pointer-events: none;
             z-index: 1;
         }
         
-        .connection line {
+        .connection-line {
+            fill: none;
             stroke: #333;
             stroke-width: 2;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
+        
+        .connection-line.visible { opacity: 1; }
         
         /* Loading state */
         .loading {
@@ -196,74 +490,83 @@
             color: #888;
             font-size: 14px;
         }
-        
-        /* Animations */
-        @keyframes nodeAppear {
-            0% {
-                opacity: 0;
-                transform: scale(0.3);
-            }
-            70% {
-                transform: scale(1.05);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-        
-        .node.appearing {
-            animation: nodeAppear 0.4s ease-out forwards;
-        }
-        
-        @keyframes nodeDisappear {
-            0% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: scale(0.3);
-            }
-        }
-        
-        .node.disappearing {
-            animation: nodeDisappear 0.3s ease-in forwards;
-        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>📊 Organization Explorer</h1>
-        <div class="time-toggle">
-            <button class="time-btn" data-range="today">Today</button>
-            <button class="time-btn active" data-range="mtd">MTD</button>
-            <button class="time-btn" data-range="ytd">YTD</button>
+        <div class="header-left">
+            <h1>📊 Viewer</h1>
+            <div class="breadcrumb" id="breadcrumb">
+                <span class="breadcrumb-item" data-id="org">Organization</span>
+            </div>
+        </div>
+        
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search reps, offices...">
+            <div class="search-results" id="searchResults"></div>
+        </div>
+        
+        <div class="header-right">
+            <div class="time-toggle">
+                <button class="time-btn" data-range="today">Today</button>
+                <button class="time-btn active" data-range="mtd">MTD</button>
+                <button class="time-btn" data-range="ytd">YTD</button>
+            </div>
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoomOut">−</button>
+                <button class="zoom-btn" id="zoomFit">⊡</button>
+                <button class="zoom-btn" id="zoomIn">+</button>
+            </div>
         </div>
     </div>
     
     <div class="canvas" id="canvas">
         <div class="viewport" id="viewport">
-            <svg class="connection" id="connections" width="4000" height="4000"></svg>
+            <svg class="connections" id="connections" width="6000" height="6000"></svg>
         </div>
+    </div>
+    
+    <div class="minimap" id="minimap">
+        <div class="minimap-viewport" id="minimapViewport"></div>
+    </div>
+    
+    <div class="comparison-panel" id="comparisonPanel">
+        <div class="comparison-header">
+            <span class="comparison-title">Compare Nodes</span>
+            <button class="comparison-close" onclick="clearComparison()">✕</button>
+        </div>
+        <div class="comparison-slots" id="comparisonSlots">
+            <div class="comparison-slot" id="slot1">Click + on a node to compare</div>
+            <div class="comparison-slot" id="slot2">Click + on another node</div>
+        </div>
+    </div>
+    
+    <div class="hover-detail" id="hoverDetail">
+        <div class="hover-detail-title" id="hoverTitle"></div>
+        <div id="hoverContent"></div>
     </div>
     
     <div class="loading" id="loading">Loading data...</div>
 
     <script>
         // Configuration
-        const CENTER_X = 2000;
-        const CENTER_Y = 2000;
-        const RADIUS_STEP = 280;
+        const CENTER_X = 3000;
+        const CENTER_Y = 3000;
+        const RADIUS_STEP = 300;
+        const MINIMAP_SCALE = 0.03;
         
         // State
         let data = null;
         let timeRange = 'mtd';
         let nodes = [];
         let expandedNodes = new Set();
-        
-        // Hierarchy levels
-        const LEVELS = ['org', 'office', 'pod', 'team', 'rep'];
+        let zoom = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let compareNodes = [];
         
         // Initialize
         async function init() {
@@ -271,14 +574,19 @@
             document.getElementById('loading').style.display = 'none';
             
             // Center viewport
-            const canvas = document.getElementById('canvas');
-            canvas.scrollLeft = CENTER_X - window.innerWidth / 2;
-            canvas.scrollTop = CENTER_Y - window.innerHeight / 2 - 100;
+            panX = -(CENTER_X - window.innerWidth / 2);
+            panY = -(CENTER_Y - window.innerHeight / 2 + 50);
+            updateViewport();
             
             // Create root node
             createRootNode();
             
-            // Time toggle handlers
+            setupEventListeners();
+            updateMinimap();
+        }
+        
+        function setupEventListeners() {
+            // Time toggle
             document.querySelectorAll('.time-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
@@ -286,6 +594,31 @@
                     timeRange = btn.dataset.range;
                     refreshStats();
                 });
+            });
+            
+            // Zoom controls
+            document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
+            document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
+            document.getElementById('zoomFit').addEventListener('click', fitToScreen);
+            
+            // Pan/drag
+            const canvas = document.getElementById('canvas');
+            canvas.addEventListener('mousedown', startDrag);
+            canvas.addEventListener('mousemove', onDrag);
+            canvas.addEventListener('mouseup', endDrag);
+            canvas.addEventListener('mouseleave', endDrag);
+            canvas.addEventListener('wheel', onWheel);
+            
+            // Search
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', onSearch);
+            searchInput.addEventListener('focus', () => {
+                if (searchInput.value) onSearch();
+            });
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.search-box')) {
+                    document.getElementById('searchResults').classList.remove('active');
+                }
             });
         }
         
@@ -299,6 +632,13 @@
             }
         }
         
+        function getPerformanceClass(goalPct, paceThreshold = 83) {
+            if (goalPct >= 140) return 'perf-great';
+            if (goalPct >= paceThreshold) return 'perf-good';
+            if (goalPct >= 50) return 'perf-behind';
+            return 'perf-critical';
+        }
+        
         function createRootNode() {
             const stats = data.org[timeRange] || {};
             const node = createNode({
@@ -309,26 +649,29 @@
                 stats: stats,
                 x: CENTER_X,
                 y: CENTER_Y,
-                children: Object.keys(data.offices || {})
+                children: Object.keys(data.offices || {}),
+                delay: 0
             });
             nodes.push(node);
         }
         
-        function createNode({ id, level, title, badge, stats, x, y, children, parentId }) {
+        function createNode({ id, level, title, badge, stats, x, y, children, parentId, delay = 0 }) {
             const viewport = document.getElementById('viewport');
             
             const node = document.createElement('div');
-            node.className = `node level-${level} appearing`;
+            const perfClass = getPerformanceClass(stats.goalPct || 0);
+            node.className = `node level-${level} ${perfClass}`;
             node.dataset.id = id;
             node.dataset.level = level;
             node.dataset.parentId = parentId || '';
-            node.style.left = (x - 90) + 'px';
-            node.style.top = (y - 60) + 'px';
+            node.style.left = (x - 80) + 'px';
+            node.style.top = (y - 55) + 'px';
             
             const hasChildren = children && children.length > 0;
             
             node.innerHTML = `
                 <button class="node-close" onclick="collapseNode('${id}', event)">×</button>
+                <button class="node-compare" onclick="toggleCompare('${id}', event)">+</button>
                 <div class="node-header">
                     <div class="node-title">${title}</div>
                     <div class="node-badge">${badge}</div>
@@ -343,37 +686,100 @@
                         <div class="stat-label">CV</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-value green">${(stats.greenPct || 0).toFixed(1)}%</div>
+                        <div class="stat-value green">${(stats.greenPct || 0).toFixed(0)}%</div>
                         <div class="stat-label">Green</div>
                     </div>
                     <div class="stat">
-                        <div class="stat-value red">${(stats.dropPct || 0).toFixed(1)}%</div>
+                        <div class="stat-value red">${(stats.dropPct || 0).toFixed(0)}%</div>
                         <div class="stat-label">Drops</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${(stats.goalPct || 0).toFixed(0)}%</div>
+                        <div class="stat-label">Goal</div>
                     </div>
                     <div class="stat">
                         <div class="stat-value">${stats.leads || 0}</div>
                         <div class="stat-label">Leads</div>
                     </div>
-                    <div class="stat">
-                        <div class="stat-value">${(stats.goalPct || 0).toFixed(0)}%</div>
-                        <div class="stat-label">% Goal</div>
-                    </div>
                 </div>
             `;
             
+            // Hover detail
+            node.addEventListener('mouseenter', (e) => showHoverDetail(id, stats, title, badge, e));
+            node.addEventListener('mousemove', (e) => moveHoverDetail(e));
+            node.addEventListener('mouseleave', hideHoverDetail);
+            
             if (hasChildren) {
                 node.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('node-close')) return;
+                    if (e.target.classList.contains('node-close') || e.target.classList.contains('node-compare')) return;
                     toggleExpand(id, x, y, level, children);
                 });
             }
             
             viewport.appendChild(node);
             
-            // Remove animation class after animation completes
-            setTimeout(() => node.classList.remove('appearing'), 400);
+            // Staggered animation
+            setTimeout(() => {
+                node.classList.add('visible');
+            }, delay);
             
-            return { id, level, x, y, children, parentId, element: node };
+            updateMinimap();
+            
+            return { id, level, x, y, children, parentId, element: node, stats, title, badge };
+        }
+        
+        function showHoverDetail(id, stats, title, badge, e) {
+            const detail = document.getElementById('hoverDetail');
+            const titleEl = document.getElementById('hoverTitle');
+            const content = document.getElementById('hoverContent');
+            
+            titleEl.textContent = `${title} (${badge})`;
+            
+            const convRate = stats.leads > 0 ? ((stats.signed / stats.leads) * 100).toFixed(1) : '0.0';
+            
+            content.innerHTML = `
+                <div class="hover-detail-row">
+                    <span class="hover-detail-label">Signed</span>
+                    <span class="hover-detail-value">${stats.signed || 0}</span>
+                </div>
+                <div class="hover-detail-row">
+                    <span class="hover-detail-label">CV</span>
+                    <span class="hover-detail-value">${(stats.cv || 0).toFixed(2)}</span>
+                </div>
+                <div class="hover-detail-row">
+                    <span class="hover-detail-label">Green Rate</span>
+                    <span class="hover-detail-value green">${(stats.greenPct || 0).toFixed(1)}%</span>
+                </div>
+                <div class="hover-detail-row">
+                    <span class="hover-detail-label">Drop Rate</span>
+                    <span class="hover-detail-value red">${(stats.dropPct || 0).toFixed(1)}%</span>
+                </div>
+                <div class="hover-detail-row">
+                    <span class="hover-detail-label">% to Goal</span>
+                    <span class="hover-detail-value">${(stats.goalPct || 0).toFixed(1)}%</span>
+                </div>
+                <div class="hover-detail-row">
+                    <span class="hover-detail-label">Leads</span>
+                    <span class="hover-detail-value">${stats.leads || 0}</span>
+                </div>
+                <div class="hover-detail-row">
+                    <span class="hover-detail-label">Conversion</span>
+                    <span class="hover-detail-value">${convRate}%</span>
+                </div>
+            `;
+            
+            moveHoverDetail(e);
+            detail.classList.add('visible');
+        }
+        
+        function moveHoverDetail(e) {
+            const detail = document.getElementById('hoverDetail');
+            detail.style.left = (e.clientX + 15) + 'px';
+            detail.style.top = (e.clientY + 15) + 'px';
+        }
+        
+        function hideHoverDetail() {
+            document.getElementById('hoverDetail').classList.remove('visible');
         }
         
         function toggleExpand(nodeId, x, y, level, children) {
@@ -382,21 +788,18 @@
             } else {
                 expandNode(nodeId, x, y, level, children);
             }
+            updateBreadcrumb();
         }
         
         function expandNode(nodeId, x, y, level, children) {
             expandedNodes.add(nodeId);
             
-            // Mark parent as expanded
             const parentEl = document.querySelector(`[data-id="${nodeId}"]`);
             if (parentEl) parentEl.classList.add('expanded');
             
-            // Calculate positions for children in a radial pattern
             const childCount = children.length;
             const angleStep = (Math.PI * 2) / Math.max(childCount, 1);
-            const radius = RADIUS_STEP;
-            
-            // Offset angle so first child is at top
+            const radius = RADIUS_STEP - (level * 30);
             const startAngle = -Math.PI / 2;
             
             children.forEach((childId, i) => {
@@ -407,32 +810,29 @@
                 let childData, childTitle, childBadge, grandchildren;
                 
                 if (level === 0) {
-                    // Expanding org -> offices
                     childData = data.offices[childId] || {};
                     childTitle = childData.name || childId;
                     childBadge = 'Office';
                     grandchildren = childData.pods || [];
+                    if (grandchildren.length === 0 && childData.reps) {
+                        grandchildren = childData.reps;
+                    }
                 } else if (level === 1) {
-                    // Expanding office -> pods
-                    childData = data.pods[childId] || {};
+                    childData = data.pods[childId] || data.reps[childId] || {};
                     childTitle = childData.name || childId;
-                    childBadge = 'Pod';
-                    grandchildren = childData.teams || childData.reps || [];
-                } else if (level === 2) {
-                    // Expanding pod -> teams or reps
-                    childData = data.teams[childId] || data.reps[childId] || {};
-                    childTitle = childData.name || childId;
-                    childBadge = childData.isRep ? 'Rep' : 'Team';
+                    childBadge = childData.isRep ? 'Rep' : 'Pod';
                     grandchildren = childData.reps || [];
-                } else if (level === 3) {
-                    // Expanding team -> reps
+                } else if (level === 2) {
                     childData = data.reps[childId] || {};
                     childTitle = childData.name || childId;
                     childBadge = 'Rep';
                     grandchildren = [];
                 }
                 
-                const stats = childData[timeRange] || childData.stats || {};
+                const stats = childData[timeRange] || {};
+                
+                // Draw connection with animation
+                drawConnection(x, y, childX, childY, nodeId + '-' + childId, i * 30);
                 
                 const node = createNode({
                     id: childId,
@@ -443,14 +843,14 @@
                     x: childX,
                     y: childY,
                     children: grandchildren,
-                    parentId: nodeId
+                    parentId: nodeId,
+                    delay: i * 40
                 });
                 
                 nodes.push(node);
-                
-                // Draw connection line
-                drawConnection(x, y, childX, childY, nodeId + '-' + childId);
             });
+            
+            updateMinimap();
         }
         
         function collapseNode(nodeId, event) {
@@ -458,11 +858,9 @@
             
             expandedNodes.delete(nodeId);
             
-            // Remove expanded class from parent
             const parentEl = document.querySelector(`[data-id="${nodeId}"]`);
             if (parentEl) parentEl.classList.remove('expanded');
             
-            // Find all descendant nodes and remove them
             const toRemove = [];
             const queue = [nodeId];
             
@@ -477,33 +875,342 @@
                 });
             }
             
-            // Animate removal
             toRemove.forEach(n => {
-                n.element.classList.add('disappearing');
-                setTimeout(() => n.element.remove(), 300);
+                n.element.style.opacity = '0';
+                n.element.style.transform = 'scale(0.5)';
+                setTimeout(() => n.element.remove(), 200);
                 
-                // Remove connection line
                 const line = document.getElementById('line-' + n.parentId + '-' + n.id);
-                if (line) line.remove();
+                if (line) {
+                    line.classList.remove('visible');
+                    setTimeout(() => line.remove(), 200);
+                }
             });
             
-            // Remove from nodes array
             nodes = nodes.filter(n => !toRemove.includes(n));
+            
+            updateBreadcrumb();
+            updateMinimap();
         }
         
-        function drawConnection(x1, y1, x2, y2, id) {
+        function drawConnection(x1, y1, x2, y2, id, delay = 0) {
             const svg = document.getElementById('connections');
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('id', 'line-' + id);
-            line.setAttribute('x1', x1);
-            line.setAttribute('y1', y1);
-            line.setAttribute('x2', x2);
-            line.setAttribute('y2', y2);
-            svg.appendChild(line);
+            
+            // Bezier curve
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const ctrl1X = x1 + (midX - x1) * 0.5;
+            const ctrl1Y = y1;
+            const ctrl2X = x2 - (x2 - midX) * 0.5;
+            const ctrl2Y = y2;
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('id', 'line-' + id);
+            path.setAttribute('class', 'connection-line');
+            path.setAttribute('d', `M ${x1} ${y1} C ${ctrl1X} ${ctrl1Y}, ${ctrl2X} ${ctrl2Y}, ${x2} ${y2}`);
+            svg.appendChild(path);
+            
+            setTimeout(() => path.classList.add('visible'), delay);
+        }
+        
+        function updateBreadcrumb() {
+            const breadcrumb = document.getElementById('breadcrumb');
+            const path = ['org'];
+            
+            // Find path from expanded nodes
+            let current = Array.from(expandedNodes).pop();
+            while (current && current !== 'org') {
+                path.unshift(current);
+                const node = nodes.find(n => n.id === current);
+                current = node?.parentId;
+            }
+            
+            breadcrumb.innerHTML = path.map((id, i) => {
+                const node = nodes.find(n => n.id === id) || { title: id === 'org' ? 'Organization' : id };
+                const isLast = i === path.length - 1;
+                return `
+                    <span class="breadcrumb-item" onclick="focusNode('${id}')">${node.title || id}</span>
+                    ${!isLast ? '<span class="breadcrumb-sep">›</span>' : ''}
+                `;
+            }).join('');
+        }
+        
+        function focusNode(nodeId) {
+            const node = nodes.find(n => n.id === nodeId);
+            if (node) {
+                panX = -(node.x - window.innerWidth / 2);
+                panY = -(node.y - window.innerHeight / 2);
+                updateViewport();
+            }
+        }
+        
+        // Pan/Drag
+        function startDrag(e) {
+            if (e.target.closest('.node')) return;
+            isDragging = true;
+            dragStart = { x: e.clientX - panX, y: e.clientY - panY };
+            document.getElementById('canvas').classList.add('dragging');
+        }
+        
+        function onDrag(e) {
+            if (!isDragging) return;
+            panX = e.clientX - dragStart.x;
+            panY = e.clientY - dragStart.y;
+            updateViewport();
+        }
+        
+        function endDrag() {
+            isDragging = false;
+            document.getElementById('canvas').classList.remove('dragging');
+        }
+        
+        function onWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            setZoom(zoom * delta, e.clientX, e.clientY);
+        }
+        
+        function setZoom(newZoom, cx, cy) {
+            const oldZoom = zoom;
+            zoom = Math.max(0.3, Math.min(2, newZoom));
+            
+            if (cx !== undefined && cy !== undefined) {
+                // Zoom toward cursor
+                panX = cx - (cx - panX) * (zoom / oldZoom);
+                panY = cy - (cy - panY) * (zoom / oldZoom);
+            }
+            
+            updateViewport();
+        }
+        
+        function fitToScreen() {
+            if (nodes.length === 0) return;
+            
+            const xs = nodes.map(n => n.x);
+            const ys = nodes.map(n => n.y);
+            const minX = Math.min(...xs) - 100;
+            const maxX = Math.max(...xs) + 100;
+            const minY = Math.min(...ys) - 100;
+            const maxY = Math.max(...ys) + 100;
+            
+            const width = maxX - minX;
+            const height = maxY - minY;
+            const scaleX = (window.innerWidth - 40) / width;
+            const scaleY = (window.innerHeight - 100) / height;
+            
+            zoom = Math.min(scaleX, scaleY, 1);
+            panX = -minX * zoom + (window.innerWidth - width * zoom) / 2;
+            panY = -minY * zoom + (window.innerHeight - height * zoom) / 2;
+            
+            updateViewport();
+        }
+        
+        function updateViewport() {
+            const viewport = document.getElementById('viewport');
+            viewport.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+            updateMinimap();
+        }
+        
+        // Minimap
+        function updateMinimap() {
+            const minimap = document.getElementById('minimap');
+            const viewport = document.getElementById('minimapViewport');
+            
+            // Clear old nodes
+            minimap.querySelectorAll('.minimap-node').forEach(n => n.remove());
+            
+            // Add nodes
+            nodes.forEach(n => {
+                const dot = document.createElement('div');
+                let typeClass = '';
+                if (n.level === 1) typeClass = 'office';
+                else if (n.level === 2) typeClass = 'pod';
+                else if (n.level === 3) typeClass = 'rep';
+                
+                dot.className = `minimap-node ${typeClass}`;
+                dot.style.left = (n.x * MINIMAP_SCALE) + 'px';
+                dot.style.top = (n.y * MINIMAP_SCALE) + 'px';
+                dot.style.width = (n.level === 0 ? 8 : n.level === 1 ? 6 : 4) + 'px';
+                dot.style.height = (n.level === 0 ? 8 : n.level === 1 ? 6 : 4) + 'px';
+                minimap.appendChild(dot);
+            });
+            
+            // Update viewport indicator
+            const vw = window.innerWidth / zoom * MINIMAP_SCALE;
+            const vh = (window.innerHeight - 50) / zoom * MINIMAP_SCALE;
+            const vx = -panX / zoom * MINIMAP_SCALE;
+            const vy = -panY / zoom * MINIMAP_SCALE;
+            
+            viewport.style.width = vw + 'px';
+            viewport.style.height = vh + 'px';
+            viewport.style.left = vx + 'px';
+            viewport.style.top = vy + 'px';
+        }
+        
+        // Search
+        function onSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const results = document.getElementById('searchResults');
+            
+            if (!query) {
+                results.classList.remove('active');
+                return;
+            }
+            
+            const matches = [];
+            
+            // Search offices
+            Object.keys(data.offices).forEach(id => {
+                if (id.toLowerCase().includes(query)) {
+                    matches.push({ id, name: id, type: 'Office' });
+                }
+            });
+            
+            // Search pods
+            Object.keys(data.pods).forEach(id => {
+                if (id.toLowerCase().includes(query)) {
+                    matches.push({ id, name: id, type: 'Pod' });
+                }
+            });
+            
+            // Search reps
+            Object.keys(data.reps).forEach(id => {
+                const rep = data.reps[id];
+                if (rep.name.toLowerCase().includes(query)) {
+                    matches.push({ id, name: rep.name, type: 'Rep' });
+                }
+            });
+            
+            results.innerHTML = matches.slice(0, 10).map(m => `
+                <div class="search-result" onclick="navigateToNode('${m.id}', '${m.type}')">
+                    ${m.name}
+                    <span class="search-result-type">${m.type}</span>
+                </div>
+            `).join('') || '<div class="search-result">No results</div>';
+            
+            results.classList.add('active');
+        }
+        
+        function navigateToNode(id, type) {
+            document.getElementById('searchResults').classList.remove('active');
+            document.getElementById('searchInput').value = '';
+            
+            // Expand path to node
+            if (type === 'Office') {
+                if (!expandedNodes.has('org')) {
+                    const orgNode = nodes.find(n => n.id === 'org');
+                    expandNode('org', orgNode.x, orgNode.y, 0, Object.keys(data.offices));
+                }
+                setTimeout(() => {
+                    const node = nodes.find(n => n.id === id);
+                    if (node) focusNode(id);
+                }, 100);
+            } else if (type === 'Pod') {
+                const pod = data.pods[id];
+                const office = pod?.office;
+                if (office && !expandedNodes.has('org')) {
+                    const orgNode = nodes.find(n => n.id === 'org');
+                    expandNode('org', orgNode.x, orgNode.y, 0, Object.keys(data.offices));
+                }
+                setTimeout(() => {
+                    if (office && !expandedNodes.has(office)) {
+                        const officeNode = nodes.find(n => n.id === office);
+                        if (officeNode) {
+                            const officeData = data.offices[office];
+                            expandNode(office, officeNode.x, officeNode.y, 1, officeData.pods || []);
+                        }
+                    }
+                    setTimeout(() => {
+                        const node = nodes.find(n => n.id === id);
+                        if (node) focusNode(id);
+                    }, 200);
+                }, 200);
+            }
+        }
+        
+        // Comparison
+        function toggleCompare(nodeId, event) {
+            event.stopPropagation();
+            
+            const node = nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            
+            const idx = compareNodes.findIndex(n => n.id === nodeId);
+            
+            if (idx >= 0) {
+                // Remove from comparison
+                compareNodes.splice(idx, 1);
+                node.element.classList.remove('compare-selected');
+            } else if (compareNodes.length < 2) {
+                // Add to comparison
+                compareNodes.push(node);
+                node.element.classList.add('compare-selected');
+            } else {
+                // Replace second node
+                compareNodes[1].element.classList.remove('compare-selected');
+                compareNodes[1] = node;
+                node.element.classList.add('compare-selected');
+            }
+            
+            updateComparisonPanel();
+        }
+        
+        function updateComparisonPanel() {
+            const panel = document.getElementById('comparisonPanel');
+            const slot1 = document.getElementById('slot1');
+            const slot2 = document.getElementById('slot2');
+            
+            if (compareNodes.length === 0) {
+                panel.classList.remove('active');
+                return;
+            }
+            
+            panel.classList.add('active');
+            
+            if (compareNodes[0]) {
+                const n = compareNodes[0];
+                const stats = n.stats;
+                slot1.className = 'comparison-slot filled';
+                slot1.innerHTML = `
+                    <div class="comparison-slot-title">${n.title}</div>
+                    <div class="comparison-stat"><span>Signed</span><span id="s1-signed">${stats.signed || 0}</span></div>
+                    <div class="comparison-stat"><span>CV</span><span id="s1-cv">${(stats.cv || 0).toFixed(1)}</span></div>
+                    <div class="comparison-stat"><span>Green%</span><span id="s1-green">${(stats.greenPct || 0).toFixed(1)}%</span></div>
+                    <div class="comparison-stat"><span>Drop%</span><span id="s1-drop">${(stats.dropPct || 0).toFixed(1)}%</span></div>
+                    <div class="comparison-stat"><span>% Goal</span><span id="s1-goal">${(stats.goalPct || 0).toFixed(0)}%</span></div>
+                `;
+            } else {
+                slot1.className = 'comparison-slot';
+                slot1.innerHTML = 'Click + on a node';
+            }
+            
+            if (compareNodes[1]) {
+                const n = compareNodes[1];
+                const stats = n.stats;
+                const s1 = compareNodes[0]?.stats || {};
+                
+                slot2.className = 'comparison-slot filled';
+                slot2.innerHTML = `
+                    <div class="comparison-slot-title">${n.title}</div>
+                    <div class="comparison-stat"><span>Signed</span><span class="${stats.signed > s1.signed ? 'comparison-stat-better' : stats.signed < s1.signed ? 'comparison-stat-worse' : ''}">${stats.signed || 0}</span></div>
+                    <div class="comparison-stat"><span>CV</span><span class="${stats.cv > s1.cv ? 'comparison-stat-better' : stats.cv < s1.cv ? 'comparison-stat-worse' : ''}">${(stats.cv || 0).toFixed(1)}</span></div>
+                    <div class="comparison-stat"><span>Green%</span><span class="${stats.greenPct > s1.greenPct ? 'comparison-stat-better' : stats.greenPct < s1.greenPct ? 'comparison-stat-worse' : ''}">${(stats.greenPct || 0).toFixed(1)}%</span></div>
+                    <div class="comparison-stat"><span>Drop%</span><span class="${stats.dropPct < s1.dropPct ? 'comparison-stat-better' : stats.dropPct > s1.dropPct ? 'comparison-stat-worse' : ''}">${(stats.dropPct || 0).toFixed(1)}%</span></div>
+                    <div class="comparison-stat"><span>% Goal</span><span class="${stats.goalPct > s1.goalPct ? 'comparison-stat-better' : stats.goalPct < s1.goalPct ? 'comparison-stat-worse' : ''}">${(stats.goalPct || 0).toFixed(0)}%</span></div>
+                `;
+            } else {
+                slot2.className = 'comparison-slot';
+                slot2.innerHTML = 'Click + on another node';
+            }
+        }
+        
+        function clearComparison() {
+            compareNodes.forEach(n => n.element.classList.remove('compare-selected'));
+            compareNodes = [];
+            document.getElementById('comparisonPanel').classList.remove('active');
         }
         
         function refreshStats() {
-            // Update all visible nodes with new time range data
             nodes.forEach(n => {
                 let stats;
                 if (n.id === 'org') {
@@ -513,10 +1220,16 @@
                 } else if (data.pods[n.id]) {
                     stats = data.pods[n.id][timeRange] || {};
                 } else if (data.reps[n.id]) {
-                    stats = data.reps[n.id][timeRange] || data.reps[n.id].stats || {};
+                    stats = data.reps[n.id][timeRange] || {};
                 }
                 
                 if (stats && n.element) {
+                    n.stats = stats;
+                    
+                    // Update performance class
+                    n.element.classList.remove('perf-great', 'perf-good', 'perf-behind', 'perf-critical');
+                    n.element.classList.add(getPerformanceClass(stats.goalPct || 0));
+                    
                     const statsEl = n.element.querySelector('.node-stats');
                     if (statsEl) {
                         statsEl.innerHTML = `
@@ -529,28 +1242,30 @@
                                 <div class="stat-label">CV</div>
                             </div>
                             <div class="stat">
-                                <div class="stat-value green">${(stats.greenPct || 0).toFixed(1)}%</div>
+                                <div class="stat-value green">${(stats.greenPct || 0).toFixed(0)}%</div>
                                 <div class="stat-label">Green</div>
                             </div>
                             <div class="stat">
-                                <div class="stat-value red">${(stats.dropPct || 0).toFixed(1)}%</div>
+                                <div class="stat-value red">${(stats.dropPct || 0).toFixed(0)}%</div>
                                 <div class="stat-label">Drops</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${(stats.goalPct || 0).toFixed(0)}%</div>
+                                <div class="stat-label">Goal</div>
                             </div>
                             <div class="stat">
                                 <div class="stat-value">${stats.leads || 0}</div>
                                 <div class="stat-label">Leads</div>
                             </div>
-                            <div class="stat">
-                                <div class="stat-value">${(stats.goalPct || 0).toFixed(0)}%</div>
-                                <div class="stat-label">% Goal</div>
-                            </div>
                         `;
                     }
                 }
             });
+            
+            updateComparisonPanel();
         }
         
-        // Initialize on load
+        // Initialize
         init();
     </script>
 </body>
