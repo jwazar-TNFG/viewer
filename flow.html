@@ -330,17 +330,56 @@
         
         function renderPods(podIds) {
             return podIds.map(podId => {
-                const pod = data.pods[podId] || {};
+                const pod = data.pods[podId] || data.teams[podId] || {};
                 const stats = pod[timeRange] || {};
                 const perfClass = getPerformanceClass(stats.goalPct || 0);
+                const hasTeams = pod.teams && pod.teams.length > 0;
                 const repCount = pod.reps?.length || 0;
+                const teamCount = pod.teams?.length || 0;
+                const safeId = podId.replace(/[^a-zA-Z0-9]/g, '_');
                 
                 return `
-                    <div class="section subsection" id="pod-${podId}">
-                        <div class="section-header" onclick="toggleSection('pod-${podId}')">
+                    <div class="section subsection" id="pod-${safeId}">
+                        <div class="section-header" onclick="toggleSection('pod-${safeId}')">
                             <div class="section-title">
                                 <span class="perf-indicator ${perfClass}"></span>
                                 ${pod.name || podId}
+                                <span class="section-badge">${hasTeams ? teamCount + ' teams' : repCount + ' reps'}</span>
+                            </div>
+                            <div class="section-stats">
+                                <div class="section-stat">
+                                    <div class="section-stat-value">${(stats.cv || 0).toFixed(1)}</div>
+                                    <div class="section-stat-label">CV</div>
+                                </div>
+                                <div class="section-stat">
+                                    <div class="section-stat-value green">${(stats.greenPct || 0).toFixed(0)}%</div>
+                                    <div class="section-stat-label">Green</div>
+                                </div>
+                                <span class="section-chevron">›</span>
+                            </div>
+                        </div>
+                        <div class="section-content">
+                            ${hasTeams ? renderTeams(pod.teams) : renderRepsRow(pod.reps || [])}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderTeams(teamIds) {
+            return teamIds.map(teamId => {
+                const team = data.teams[teamId] || {};
+                const stats = team[timeRange] || {};
+                const perfClass = getPerformanceClass(stats.goalPct || 0);
+                const repCount = team.reps?.length || 0;
+                const safeId = teamId.replace(/[^a-zA-Z0-9]/g, '_');
+                
+                return `
+                    <div class="section subsection" id="team-${safeId}">
+                        <div class="section-header" onclick="toggleSection('team-${safeId}')">
+                            <div class="section-title">
+                                <span class="perf-indicator ${perfClass}"></span>
+                                ${team.name || teamId}
                                 <span class="section-badge">${repCount} reps</span>
                             </div>
                             <div class="section-stats">
@@ -356,7 +395,7 @@
                             </div>
                         </div>
                         <div class="section-content">
-                            ${renderRepsRow(pod.reps || [])}
+                            ${renderRepsRow(team.reps || [])}
                         </div>
                     </div>
                 `;

@@ -267,7 +267,7 @@
                     items = office.pods.map(id => ({
                         id,
                         type: 'pod',
-                        ...data.pods[id]
+                        ...(data.pods[id] || data.teams[id] || {})
                     }));
                 } else if (office.reps) {
                     items = office.reps.map(name => ({
@@ -280,8 +280,26 @@
                 level.classList.add('grid-2');
             } else if (type === 'pod') {
                 const pod = data.pods[parentId];
-                if (pod && pod.reps) {
+                if (pod && pod.teams && pod.teams.length > 0) {
+                    // Pod has teams
+                    items = pod.teams.map(id => ({
+                        id,
+                        type: 'team',
+                        ...(data.teams[id] || {})
+                    }));
+                } else if (pod && pod.reps) {
                     items = pod.reps.map(name => ({
+                        id: name,
+                        type: 'rep',
+                        name,
+                        ...data.reps[name]
+                    }));
+                }
+                level.classList.add('grid-2');
+            } else if (type === 'team') {
+                const team = data.teams[parentId];
+                if (team && team.reps) {
+                    items = team.reps.map(name => ({
                         id: name,
                         type: 'rep',
                         name,
@@ -302,9 +320,20 @@
                 const stats = item[timeRange] || {};
                 const perfClass = getPerformanceClass(stats.goalPct || 0);
                 const hasChildren = item.type !== 'rep';
-                const childCount = item.type === 'office' ? 
-                    (data.offices[item.id]?.pods?.length || data.offices[item.id]?.reps?.length || 0) :
-                    item.type === 'pod' ? (data.pods[item.id]?.reps?.length || 0) : 0;
+                let childCount = 0;
+                let childLabel = 'items';
+                if (item.type === 'office') {
+                    const off = data.offices[item.id];
+                    childCount = off?.pods?.length || off?.reps?.length || 0;
+                    childLabel = off?.pods?.length ? 'pods' : 'reps';
+                } else if (item.type === 'pod') {
+                    const pod = data.pods[item.id];
+                    childCount = pod?.teams?.length || pod?.reps?.length || 0;
+                    childLabel = pod?.teams?.length ? 'teams' : 'reps';
+                } else if (item.type === 'team') {
+                    childCount = data.teams[item.id]?.reps?.length || 0;
+                    childLabel = 'reps';
+                }
                 
                 return `
                     <div class="card ${perfClass}" onclick="${hasChildren ? `drillDown('${item.type}', '${item.id}', '${item.name || item.id}')` : ''}">
@@ -328,7 +357,7 @@
                         </div>
                         ${hasChildren ? `
                         <div class="card-footer">
-                            <span>${childCount} ${item.type === 'office' ? (data.offices[item.id]?.pods?.length ? 'pods' : 'reps') : 'reps'}</span>
+                            <span>${childCount} ${childLabel}</span>
                             <span>${(stats.goalPct || 0).toFixed(0)}% goal</span>
                         </div>
                         ` : `
@@ -362,6 +391,8 @@
                 showLevel('office', title, id);
             } else if (type === 'pod') {
                 showLevel('pod', title, id);
+            } else if (type === 'team') {
+                showLevel('team', title, id);
             }
         }
         
