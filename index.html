@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viewer — Organization Explorer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 20px;
+            background: rgba(0,0,0,0.9);
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .time-toggle {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .time-btn {
+            padding: 6px 14px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #888;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .time-btn:hover { background: #2a2a2a; color: #fff; }
+        .time-btn.active { background: #5BA4B5; border-color: #5BA4B5; color: #fff; }
+        
+        .canvas {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+        }
+        
+        .viewport {
+            position: relative;
+            width: 4000px;
+            height: 4000px;
+        }
+        
+        .node {
+            position: absolute;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 16px;
+            min-width: 180px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform-origin: center center;
+            z-index: 10;
+        }
+        
+        .node:hover {
+            border-color: #5BA4B5;
+            transform: scale(1.02);
+            z-index: 20;
+        }
+        
+        .node.expanded {
+            border-color: #5BA4B5;
+            box-shadow: 0 0 20px rgba(91, 164, 181, 0.3);
+        }
+        
+        .node.level-0 { min-width: 220px; }
+        .node.level-1 { min-width: 180px; }
+        .node.level-2 { min-width: 160px; }
+        .node.level-3 { min-width: 150px; }
+        .node.level-4 { min-width: 140px; font-size: 11px; }
+        
+        .node-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .node-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .node.level-4 .node-title { font-size: 12px; }
+        
+        .node-badge {
+            background: #333;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            color: #888;
+        }
+        
+        .node-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .stat {
+            background: #111;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #5BA4B5;
+        }
+        
+        .stat-value.green { color: #4ade80; }
+        .stat-value.red { color: #ef4444; }
+        
+        .node.level-3 .stat-value,
+        .node.level-4 .stat-value { font-size: 14px; }
+        
+        .stat-label {
+            font-size: 9px;
+            color: #666;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        
+        .node-close {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            background: #ef4444;
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+        }
+        
+        .node.expanded .node-close { display: flex; }
+        
+        /* Connection lines */
+        .connection {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .connection line {
+            stroke: #333;
+            stroke-width: 2;
+        }
+        
+        /* Loading state */
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #888;
+            font-size: 14px;
+        }
+        
+        /* Animations */
+        @keyframes nodeAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            70% {
+                transform: scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .node.appearing {
+            animation: nodeAppear 0.4s ease-out forwards;
+        }
+        
+        @keyframes nodeDisappear {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+        }
+        
+        .node.disappearing {
+            animation: nodeDisappear 0.3s ease-in forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Organization Explorer</h1>
+        <div class="time-toggle">
+            <button class="time-btn" data-range="today">Today</button>
+            <button class="time-btn active" data-range="mtd">MTD</button>
+            <button class="time-btn" data-range="ytd">YTD</button>
+        </div>
+    </div>
+    
+    <div class="canvas" id="canvas">
+        <div class="viewport" id="viewport">
+            <svg class="connection" id="connections" width="4000" height="4000"></svg>
+        </div>
+    </div>
+    
+    <div class="loading" id="loading">Loading data...</div>
+
+    <script>
+        // Configuration
+        const CENTER_X = 2000;
+        const CENTER_Y = 2000;
+        const RADIUS_STEP = 280;
+        
+        // State
+        let data = null;
+        let timeRange = 'mtd';
+        let nodes = [];
+        let expandedNodes = new Set();
+        
+        // Hierarchy levels
+        const LEVELS = ['org', 'office', 'pod', 'team', 'rep'];
+        
+        // Initialize
+        async function init() {
+            await loadData();
+            document.getElementById('loading').style.display = 'none';
+            
+            // Center viewport
+            const canvas = document.getElementById('canvas');
+            canvas.scrollLeft = CENTER_X - window.innerWidth / 2;
+            canvas.scrollTop = CENTER_Y - window.innerHeight / 2 - 100;
+            
+            // Create root node
+            createRootNode();
+            
+            // Time toggle handlers
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    timeRange = btn.dataset.range;
+                    refreshStats();
+                });
+            });
+        }
+        
+        async function loadData() {
+            try {
+                const res = await fetch('data.json?' + Date.now());
+                data = await res.json();
+            } catch (e) {
+                console.error('Failed to load data:', e);
+                data = { org: {}, offices: {}, pods: {}, teams: {}, reps: {} };
+            }
+        }
+        
+        function createRootNode() {
+            const stats = data.org[timeRange] || {};
+            const node = createNode({
+                id: 'org',
+                level: 0,
+                title: '1-800-NO-FAULT',
+                badge: 'Organization',
+                stats: stats,
+                x: CENTER_X,
+                y: CENTER_Y,
+                children: Object.keys(data.offices || {})
+            });
+            nodes.push(node);
+        }
+        
+        function createNode({ id, level, title, badge, stats, x, y, children, parentId }) {
+            const viewport = document.getElementById('viewport');
+            
+            const node = document.createElement('div');
+            node.className = `node level-${level} appearing`;
+            node.dataset.id = id;
+            node.dataset.level = level;
+            node.dataset.parentId = parentId || '';
+            node.style.left = (x - 90) + 'px';
+            node.style.top = (y - 60) + 'px';
+            
+            const hasChildren = children && children.length > 0;
+            
+            node.innerHTML = `
+                <button class="node-close" onclick="collapseNode('${id}', event)">×</button>
+                <div class="node-header">
+                    <div class="node-title">${title}</div>
+                    <div class="node-badge">${badge}</div>
+                </div>
+                <div class="node-stats">
+                    <div class="stat">
+                        <div class="stat-value">${stats.signed || 0}</div>
+                        <div class="stat-label">Signed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${(stats.cv || 0).toFixed(1)}</div>
+                        <div class="stat-label">CV</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value green">${(stats.greenPct || 0).toFixed(1)}%</div>
+                        <div class="stat-label">Green</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value red">${(stats.dropPct || 0).toFixed(1)}%</div>
+                        <div class="stat-label">Drops</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${stats.leads || 0}</div>
+                        <div class="stat-label">Leads</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${(stats.goalPct || 0).toFixed(0)}%</div>
+                        <div class="stat-label">% Goal</div>
+                    </div>
+                </div>
+            `;
+            
+            if (hasChildren) {
+                node.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('node-close')) return;
+                    toggleExpand(id, x, y, level, children);
+                });
+            }
+            
+            viewport.appendChild(node);
+            
+            // Remove animation class after animation completes
+            setTimeout(() => node.classList.remove('appearing'), 400);
+            
+            return { id, level, x, y, children, parentId, element: node };
+        }
+        
+        function toggleExpand(nodeId, x, y, level, children) {
+            if (expandedNodes.has(nodeId)) {
+                collapseNode(nodeId);
+            } else {
+                expandNode(nodeId, x, y, level, children);
+            }
+        }
+        
+        function expandNode(nodeId, x, y, level, children) {
+            expandedNodes.add(nodeId);
+            
+            // Mark parent as expanded
+            const parentEl = document.querySelector(`[data-id="${nodeId}"]`);
+            if (parentEl) parentEl.classList.add('expanded');
+            
+            // Calculate positions for children in a radial pattern
+            const childCount = children.length;
+            const angleStep = (Math.PI * 2) / Math.max(childCount, 1);
+            const radius = RADIUS_STEP;
+            
+            // Offset angle so first child is at top
+            const startAngle = -Math.PI / 2;
+            
+            children.forEach((childId, i) => {
+                const angle = startAngle + (i * angleStep);
+                const childX = x + Math.cos(angle) * radius;
+                const childY = y + Math.sin(angle) * radius;
+                
+                let childData, childTitle, childBadge, grandchildren;
+                
+                if (level === 0) {
+                    // Expanding org -> offices
+                    childData = data.offices[childId] || {};
+                    childTitle = childData.name || childId;
+                    childBadge = 'Office';
+                    grandchildren = childData.pods || [];
+                } else if (level === 1) {
+                    // Expanding office -> pods
+                    childData = data.pods[childId] || {};
+                    childTitle = childData.name || childId;
+                    childBadge = 'Pod';
+                    grandchildren = childData.teams || childData.reps || [];
+                } else if (level === 2) {
+                    // Expanding pod -> teams or reps
+                    childData = data.teams[childId] || data.reps[childId] || {};
+                    childTitle = childData.name || childId;
+                    childBadge = childData.isRep ? 'Rep' : 'Team';
+                    grandchildren = childData.reps || [];
+                } else if (level === 3) {
+                    // Expanding team -> reps
+                    childData = data.reps[childId] || {};
+                    childTitle = childData.name || childId;
+                    childBadge = 'Rep';
+                    grandchildren = [];
+                }
+                
+                const stats = childData[timeRange] || childData.stats || {};
+                
+                const node = createNode({
+                    id: childId,
+                    level: level + 1,
+                    title: childTitle,
+                    badge: childBadge,
+                    stats: stats,
+                    x: childX,
+                    y: childY,
+                    children: grandchildren,
+                    parentId: nodeId
+                });
+                
+                nodes.push(node);
+                
+                // Draw connection line
+                drawConnection(x, y, childX, childY, nodeId + '-' + childId);
+            });
+        }
+        
+        function collapseNode(nodeId, event) {
+            if (event) event.stopPropagation();
+            
+            expandedNodes.delete(nodeId);
+            
+            // Remove expanded class from parent
+            const parentEl = document.querySelector(`[data-id="${nodeId}"]`);
+            if (parentEl) parentEl.classList.remove('expanded');
+            
+            // Find all descendant nodes and remove them
+            const toRemove = [];
+            const queue = [nodeId];
+            
+            while (queue.length > 0) {
+                const currentId = queue.shift();
+                nodes.forEach(n => {
+                    if (n.parentId === currentId) {
+                        toRemove.push(n);
+                        queue.push(n.id);
+                        expandedNodes.delete(n.id);
+                    }
+                });
+            }
+            
+            // Animate removal
+            toRemove.forEach(n => {
+                n.element.classList.add('disappearing');
+                setTimeout(() => n.element.remove(), 300);
+                
+                // Remove connection line
+                const line = document.getElementById('line-' + n.parentId + '-' + n.id);
+                if (line) line.remove();
+            });
+            
+            // Remove from nodes array
+            nodes = nodes.filter(n => !toRemove.includes(n));
+        }
+        
+        function drawConnection(x1, y1, x2, y2, id) {
+            const svg = document.getElementById('connections');
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('id', 'line-' + id);
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+            svg.appendChild(line);
+        }
+        
+        function refreshStats() {
+            // Update all visible nodes with new time range data
+            nodes.forEach(n => {
+                let stats;
+                if (n.id === 'org') {
+                    stats = data.org[timeRange] || {};
+                } else if (data.offices[n.id]) {
+                    stats = data.offices[n.id][timeRange] || {};
+                } else if (data.pods[n.id]) {
+                    stats = data.pods[n.id][timeRange] || {};
+                } else if (data.reps[n.id]) {
+                    stats = data.reps[n.id][timeRange] || data.reps[n.id].stats || {};
+                }
+                
+                if (stats && n.element) {
+                    const statsEl = n.element.querySelector('.node-stats');
+                    if (statsEl) {
+                        statsEl.innerHTML = `
+                            <div class="stat">
+                                <div class="stat-value">${stats.signed || 0}</div>
+                                <div class="stat-label">Signed</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${(stats.cv || 0).toFixed(1)}</div>
+                                <div class="stat-label">CV</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value green">${(stats.greenPct || 0).toFixed(1)}%</div>
+                                <div class="stat-label">Green</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value red">${(stats.dropPct || 0).toFixed(1)}%</div>
+                                <div class="stat-label">Drops</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${stats.leads || 0}</div>
+                                <div class="stat-label">Leads</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${(stats.goalPct || 0).toFixed(0)}%</div>
+                                <div class="stat-label">% Goal</div>
+                            </div>
+                        `;
+                    }
+                }
+            });
+        }
+        
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
