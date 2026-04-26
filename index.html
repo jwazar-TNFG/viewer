@@ -553,7 +553,7 @@
         // Configuration
         const CENTER_X = 3000;
         const CENTER_Y = 3000;
-        const RADIUS_STEP = 300;
+        const BASE_RADIUS = 400;
         const MINIMAP_SCALE = 0.03;
         
         // State
@@ -798,14 +798,40 @@
             if (parentEl) parentEl.classList.add('expanded');
             
             const childCount = children.length;
-            const angleStep = (Math.PI * 2) / Math.max(childCount, 1);
-            const radius = RADIUS_STEP - (level * 30);
+            
+            // Dynamic radius based on child count — more children = wider spread
+            const minRadius = 350;
+            const radiusPerChild = 40;
+            const radius = Math.max(minRadius, 200 + childCount * radiusPerChild);
+            
+            // Angle step with minimum spacing
+            const minAngleSpacing = 0.35; // ~20 degrees minimum between nodes
+            const naturalAngleStep = (Math.PI * 2) / Math.max(childCount, 1);
+            const angleStep = Math.max(naturalAngleStep, minAngleSpacing);
+            
+            // If we need more than 360°, use multiple rings
+            const nodesPerRing = Math.floor((Math.PI * 2) / minAngleSpacing);
+            const useMultipleRings = childCount > nodesPerRing;
+            
             const startAngle = -Math.PI / 2;
             
             children.forEach((childId, i) => {
-                const angle = startAngle + (i * angleStep);
-                const childX = x + Math.cos(angle) * radius;
-                const childY = y + Math.sin(angle) * radius;
+                let childX, childY;
+                
+                if (useMultipleRings) {
+                    // Multiple rings for many children
+                    const ring = Math.floor(i / nodesPerRing);
+                    const indexInRing = i % nodesPerRing;
+                    const ringRadius = radius + (ring * 250);
+                    const ringAngleStep = (Math.PI * 2) / Math.min(nodesPerRing, childCount - ring * nodesPerRing);
+                    const angle = startAngle + (indexInRing * ringAngleStep);
+                    childX = x + Math.cos(angle) * ringRadius;
+                    childY = y + Math.sin(angle) * ringRadius;
+                } else {
+                    const angle = startAngle + (i * angleStep);
+                    childX = x + Math.cos(angle) * radius;
+                    childY = y + Math.sin(angle) * radius;
+                }
                 
                 let childData, childTitle, childBadge, grandchildren;
                 
@@ -850,7 +876,50 @@
                 nodes.push(node);
             });
             
+            // Auto-zoom to fit all visible nodes after expansion
+            setTimeout(() => {
+                autoFitExpanded(nodeId, x, y, radius);
+            }, 100);
+            
             updateMinimap();
+        }
+        
+        function autoFitExpanded(parentId, parentX, parentY, radius) {
+            // Calculate bounds of parent + all its direct children
+            const childNodes = nodes.filter(n => n.parentId === parentId);
+            if (childNodes.length === 0) return;
+            
+            const allX = [parentX, ...childNodes.map(n => n.x)];
+            const allY = [parentY, ...childNodes.map(n => n.y)];
+            
+            const minX = Math.min(...allX) - 150;
+            const maxX = Math.max(...allX) + 150;
+            const minY = Math.min(...allY) - 150;
+            const maxY = Math.max(...allY) + 150;
+            
+            const width = maxX - minX;
+            const height = maxY - minY;
+            
+            const availableWidth = window.innerWidth - 40;
+            const availableHeight = window.innerHeight - 100;
+            
+            const scaleX = availableWidth / width;
+            const scaleY = availableHeight / height;
+            
+            const newZoom = Math.min(scaleX, scaleY, 1, zoom); // Don't zoom in, only out
+            
+            if (newZoom < zoom * 0.95) {
+                // Need to zoom out
+                zoom = Math.max(0.3, newZoom * 0.9);
+                
+                // Center on the parent node
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                panX = -centerX * zoom + window.innerWidth / 2;
+                panY = -centerY * zoom + window.innerHeight / 2;
+                
+                updateViewport();
+            }
         }
         
         function collapseNode(nodeId, event) {
